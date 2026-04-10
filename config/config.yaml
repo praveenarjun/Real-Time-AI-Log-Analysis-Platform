@@ -1,0 +1,23 @@
+# Central configuration for all Go services
+server:
+  gatewayPort: 8080
+  collectorPort: 8081
+  alerterPort: 8082
+  workforcePort: 8082
+  aiServicePort: 8000
+
+database:
+  dsn: "postgresql://postgres.ivljtbrvvhfrkauxxojn:raveen%2A4125@aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require"
+
+kafka:
+  brokers:
+    - "kafka:29092"
+
+redis:
+  url: "redis://redis:6379"
+
+elasticsearch:
+  url: "http://elasticsearch:9200"
+
+logging:
+  level: "info"

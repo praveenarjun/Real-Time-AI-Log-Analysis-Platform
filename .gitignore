@@ -1,0 +1,84 @@
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Credentials & Keys
+*.pem
+*.cert
+*.key
+*.crt
+*.pfx
+*.p12
+*.jks
+secrets/
+
+# Go
+bin/
+go-services/bin/
+vendor/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+.pytest_cache/
+python-ai-service/models/*.onnx
+python-ai-service/models/*.pkl
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+*.tfvars
+*.tfvars.json
+
+# Infrastructure & Cloud
+infra/terraform/.terraform/
+infra/bicep/.azure/
+.aws/
+.azure/
+.gcloud/
+.kube/
+kubeconfig*
+
+# Sensitive JSON
+service-account*.json
+credentials*.json
+client_secret*.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Binaries & Large Compiled Files
+main
+cmd
+log-indexer
+log-simulator/bin/
+workforce-service/main
+alerting/main
+api-gateway/main
+log-collector/main
+**/main
+**/[a-z]*-service
+*.exe
+*.dll
+*.so
+*.dylib
+
+# UI
+node_modules/
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+
+infra/k8s/secrets.yml

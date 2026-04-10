@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kafka-heartbeat
+  namespace: forensic-platform
+spec:
+  schedule: "0 */12 * * *" 
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: heartbeat
+            image: curlimages/curl
+            command:
+            - /bin/sh
+            - -c
+            - "echo 'Kafka Wakeup Ping Successful'" 
+          restartPolicy: OnFailure

@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-gateway
+  namespace: forensic-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-gateway
+  template:
+    metadata:
+      labels:
+        app: go-gateway
+      annotations:
+        ad.datadoghq.com/gateway.logs: '[{"source": "go", "service": "api-gateway"}]'
+        ad.datadoghq.com/gateway.check_names: '["postgres"]'
+        ad.datadoghq.com/gateway.init_configs: '[{}]'
+        ad.datadoghq.com/gateway.instances: |
+          [
+            {
+              "host": "PLACEHOLDER_DB_HOST",
+              "port":"6543",
+              "username":"PLACEHOLDER_DB_USER", 
+              "password":"PLACEHOLDER_DB_PASS",
+              "ssl": "require",
+              "dbname": "postgres"
+            }
+          ]
+    spec:
+      volumes:
+      - name: kafka-certs-vol
+        secret:
+          secretName: kafka-certs
+      - name: config-vol
+        configMap:
+          name: gateway-config-file
+      containers:
+      - name: gateway
+        image: acrlogpraveen99.azurecr.io/go-gateway:latest
+        imagePullPolicy: Always
+        command: ["/bin/sh", "-c", "export DATABASE_URL='postgresql://PLACEHOLDER_DB_USER:PLACEHOLDER_DB_PASS@PLACEHOLDER_DB_HOST:6543/postgres?sslmode=require&prefer_simple_protocol=true' && ./main"]
+        volumeMounts:
+        - name: kafka-certs-vol
+          mountPath: "/app/certs"
+          readOnly: true
+        - name: config-vol
+          mountPath: "/home/appuser/config"
+          readOnly: true
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+        # REMOVED HARDCODED DATABASE_URL (EXORCISED!)
+        envFrom:
+        - configMapRef:
+            name: log-analyzer-config
+        - secretRef:
+            name: log-analyzer-secrets
+        - secretRef:
+            name: forensic-secrets
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-gateway
+  namespace: forensic-platform
+spec:
+  type: LoadBalancer
+  selector:
+    app: go-gateway
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: go-gateway-hpa
+  namespace: forensic-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: go-gateway
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70

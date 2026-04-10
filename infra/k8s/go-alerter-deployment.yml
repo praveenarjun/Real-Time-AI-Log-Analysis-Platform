@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-alerter
+  namespace: forensic-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-alerter
+  template:
+    metadata:
+      labels:
+        app: go-alerter
+    spec:
+      containers:
+      - name: alerter
+        image: acrlogpraveen99.azurecr.io/alerting:latest
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        envFrom:
+        - configMapRef:
+            name: log-analyzer-config
+        - secretRef:
+            name: log-analyzer-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-alerter
+  namespace: forensic-platform
+spec:
+  selector:
+    app: go-alerter
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

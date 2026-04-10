@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: log-analyzer-config
+  namespace: forensic-platform
+data:
+  ENVIRONMENT: "dev"
+  KAFKA_BROKER: "PLACEHOLDER_KAFKA_BROKER"
+  KAFKA_TOPIC: "raw-logs"
+  GRAFANA_URL: "REDACTED"
+  UPSTASH_REDIS_URL: "REDACTED"
+  # --- AI Configuration ---
+  LLM_PROVIDER: "azure"
+  LLM_MODEL: "gpt-5.4-nano"
+  AZURE_OPENAI_ENDPOINT: "PLACEHOLDER_AZURE_URL"
+  AZURE_OPENAI_DEPLOYMENT_ID: "gpt-5.4-nano"
+  OPENAI_API_VERSION: "2025-04-01-preview"

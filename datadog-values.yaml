@@ -1,0 +1,25 @@
+datadog:
+  apiKeyExistingSecret: datadog-secret
+  appKeyExistingSecret: datadog-secret
+  site: us5.datadoghq.com
+  
+  logs:
+    enabled: true
+    containerCollectAll: true
+    
+  processAgent:
+    enabled: true
+
+  # The new way to do system monitoring in 2026
+  networkMonitoring:
+    enabled: true
+  
+  systemProbe:
+    enableOOMKill: true
+    enableTCPQueueLength: true
+
+targetSystem: "linux"
+
+providers:
+  aks:
+    enabled: true

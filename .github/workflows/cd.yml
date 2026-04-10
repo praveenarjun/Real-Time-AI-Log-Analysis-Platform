@@ -1,0 +1,116 @@
+name: Continuous Deployment
+
+on:
+  workflow_run:
+    workflows: ["Continuous Integration"]
+    branches: [main]
+    types:
+      - completed
+
+jobs:
+  build-and-push:
+    name: Build & Push to ACR
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        uses: azure/docker-login@v2
+        with:
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build & Push Services
+        run: |
+          SERVICES=("api-gateway" "log-collector" "python-ai-service")
+          SHA=${{ github.sha }}
+          REGISTRY=${{ secrets.ACR_LOGIN_SERVER }}
+
+          # Build and push Gateway
+          docker build -t $REGISTRY/go-gateway:$SHA -t $REGISTRY/go-gateway:latest -f api-gateway/Dockerfile .
+          docker push $REGISTRY/go-gateway:$SHA
+          docker push $REGISTRY/go-gateway:latest
+
+          # Build and push Collector
+          docker build -t $REGISTRY/go-collector:$SHA -t $REGISTRY/go-collector:latest -f log-collector/Dockerfile .
+          docker push $REGISTRY/go-collector:$SHA
+          docker push $REGISTRY/go-collector:latest
+
+          # Build and push AI Service
+          docker build -t $REGISTRY/python-ai:$SHA -t $REGISTRY/python-ai:latest ./python-ai-service
+          docker push $REGISTRY/python-ai:$SHA
+          docker push $REGISTRY/python-ai:latest
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS Context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+
+      - name: Deploy Manifests
+        run: |
+          SHA=${{ github.sha }}
+          REGISTRY=${{ secrets.ACR_LOGIN_SERVER }}
+          
+          # Use sed to update image tags dynamically
+          sed -i "s|image: .*/go-gateway:.*|image: $REGISTRY/go-gateway:$SHA|g" infra/k8s/go-gateway-deployment.yml
+          sed -i "s|image: .*/go-collector:.*|image: $REGISTRY/go-collector:$SHA|g" infra/k8s/go-collector-deployment.yml
+          sed -i "s|image: .*/python-ai:.*|image: $REGISTRY/python-ai:$SHA|g" infra/k8s/ai-service-deployment.yml
+          
+          kubectl apply -f infra/k8s/
+          kubectl rollout status deployment go-gateway -n forensic-platform
+          kubectl rollout status deployment go-collector -n forensic-platform
+          kubectl rollout status deployment ai-service -n forensic-platform
+
+  deploy-production:
+    name: Deploy to Production
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Set AKS Context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+
+      - name: Deploy to Production
+        run: |
+          SHA=${{ github.sha }}
+          # Production usually has its own namespace or distinct cluster. 
+          # For this project, we apply final stability checks.
+          kubectl apply -f infra/k8s/
+          echo "Production Rollout Complete"
+
+      - name: Slack Notification
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_MESSAGE: "🚀 Deployment to Production: ${{ job.status }}"

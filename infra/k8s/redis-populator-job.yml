@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: redis-populator
+  namespace: forensic-platform
+spec:
+  template:
+    spec:
+      containers:
+      - name: redis-cli
+        image: redis:alpine
+        env:
+        - name: REDIS_URL
+          value: feasible-bedbug-40106.upstash.io
+        - name: REDIS_PASS
+          value: AZyqAAIncDE2YjQzMGM0ZGNhYmM0YWJkYTk3ZTMyNTkwODg0N2MxYnAxNDAxMDY
+        command:
+        - /bin/sh
+        - -c
+        - |
+          redis-cli -h "$REDIS_URL" -p 6379 -a "$REDIS_PASS" --tls set health_check_ping "ok"
+      restartPolicy: Never
+  backoffLimit: 2

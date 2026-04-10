@@ -1,0 +1,185 @@
+syntax = "proto3";
+
+package loganalyzer;
+
+option go_package = "praveenchalla.local/ai-log-analyzer/proto/generated";
+
+// --- ENUMS ---
+
+enum LogLevel {
+  DEBUG = 0;
+  INFO = 1;
+  WARN = 2;
+  ERROR = 3;
+  FATAL = 4;
+}
+
+enum LogSource {
+  APPLICATION = 0;
+  SERVER = 1;
+  NETWORK = 2;
+  DATABASE = 3;
+  SECURITY = 4;
+}
+
+enum Severity {
+  LOW = 0;
+  MEDIUM = 1;
+  HIGH = 2;
+  CRITICAL = 3;
+}
+
+enum AnomalyType {
+  ERROR_SPIKE = 0;
+  CASCADE_FAILURE = 1;
+  PATTERN_ANOMALY = 2;
+  RESOURCE_EXHAUSTION = 3;
+  SECURITY_THREAT = 4;
+}
+
+// --- MESSAGES ---
+
+message LogEntry {
+  string id = 1;
+  string timestamp = 2;
+  LogSource source = 3;
+  LogLevel level = 4;
+  string message = 5;
+  string service_name = 6;
+  string host = 7;
+  map<string, string> metadata = 8;
+  string stack_trace = 9;
+  string request_id = 10;
+}
+
+message LogBatch {
+  string batch_id = 1;
+  repeated LogEntry logs = 2;
+  string timestamp = 3;
+  int32 count = 4;
+}
+
+message AnomalyResult {
+  string id = 1;
+  AnomalyType type = 2;
+  Severity severity = 3;
+  string description = 4;
+  repeated string related_log_ids = 5;
+  string root_cause = 6;
+  repeated string recommendations = 7;
+  float confidence_score = 8;
+  string detected_at = 9;
+  string service_name = 10;
+}
+
+message AnalysisResponse {
+  repeated AnomalyResult anomalies = 1;
+  string summary = 2;
+  float health_score = 3;
+  int64 processing_time_ms = 4;
+}
+
+message ReportRequest {
+  string time_range_start = 1;
+  string time_range_end = 2;
+  repeated string services = 3;
+  repeated string anomaly_ids = 4;
+}
+
+message IncidentReport {
+  string id = 1;
+  string title = 2;
+  Severity severity = 3;
+  string executive_summary = 4;
+  repeated TimelineEvent timeline = 5;
+  string root_cause_analysis = 6;
+  string impact_assessment = 7;
+  repeated string affected_services = 8;
+  float risk_score = 9;
+  Recommendations recommendations = 10;
+  repeated ActionItem action_items = 11;
+  string generated_at = 12;
+}
+
+message TimelineEvent {
+  string timestamp = 1;
+  string event = 2;
+  string service = 3;
+}
+
+message Recommendations {
+  repeated string immediate = 1;
+  repeated string short_term = 2;
+  repeated string long_term = 3;
+}
+
+message ActionItem {
+  string task = 1;
+  string priority = 2;
+  string assignee_role = 3;
+  string deadline = 4;
+}
+
+message ChatRequest {
+  string message = 1;
+  string session_id = 2;
+}
+
+message ChatResponse {
+  string content = 1;
+  bool is_final = 2;
+}
+
+message PredictionRequest {
+  string service_name = 1;
+  int32 prediction_hours = 2;
+}
+
+message Prediction {
+  string service_name = 1;
+  string failure_type = 2;
+  float probability = 3;
+  string estimated_time = 4;
+  string recommendation = 5;
+}
+
+message PredictionResponse {
+  repeated Prediction predictions = 1;
+}
+
+message AlertRequest {
+  string anomaly_id = 1;
+  Severity severity = 2;
+  string title = 3;
+  string message = 4;
+  repeated string channels = 5;
+  map<string, string> metadata = 6;
+}
+
+message AlertResponse {
+  bool success = 1;
+  string alert_id = 2;
+  string message = 3;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;
+  map<string, string> details = 2;
+}
+
+// --- SERVICES ---
+
+service AIAnalysisService {
+  rpc AnalyzeLogs(LogBatch) returns (AnalysisResponse);
+  rpc StreamAnalysis(stream LogEntry) returns (stream AnomalyResult);
+  rpc GenerateReport(ReportRequest) returns (IncidentReport);
+  rpc ChatAboutLogs(ChatRequest) returns (stream ChatResponse);
+  rpc PredictFailures(PredictionRequest) returns (PredictionResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+service AlertService {
+  rpc SendAlert(AlertRequest) returns (AlertResponse);
+}

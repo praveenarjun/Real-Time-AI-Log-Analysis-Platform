@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-collector
+  namespace: forensic-platform
+  labels:
+    app: go-collector
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: go-collector
+  template:
+    metadata:
+      labels:
+        app: go-collector
+      annotations:
+        ad.datadoghq.com/collector.logs: '[{"source": "go", "service": "go-collector"}]'
+        # Datadog monitoring for the KAFKA connection (Aiven)
+        # Using heartbeats inside app logs instead of Agent check to avoid SSL CA trust noise.
+        # ad.datadoghq.com/collector.check_names: '["kafka_consumer"]'
+    spec:
+      # --- ADDITION 1: Define the Volume from your Secret ---
+      volumes:
+      - name: kafka-certs-vol
+        secret:
+          secretName: kafka-certs
+      # ------------------------------------------------------
+      containers:
+      - name: collector
+        image: acrlogpraveen99.azurecr.io/go-collector:latest
+        # --- ADDITION 2: Mount the Volume into the Container ---
+        volumeMounts:
+        - name: kafka-certs-vol
+          mountPath: "/app/certs"
+          readOnly: true
+        # -------------------------------------------------------
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        envFrom:
+        - configMapRef:
+            name: log-analyzer-config
+        - secretRef:
+            name: forensic-secrets
+        ports:
+        - containerPort: 8081
+        # livenessProbe:
+        #   httpGet:
+        #     path: /health
+        #     port: 8081
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-collector
+  namespace: forensic-platform
+spec:
+  selector:
+    app: go-collector
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8081

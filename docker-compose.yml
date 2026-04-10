@@ -1,0 +1,303 @@
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # --- INFRASTRUCTURE ---
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - log-analyzer-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - log-analyzer-network
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: >
+      bash -c "
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --partitions 3 --replication-factor 1 --topic raw-logs &&
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --partitions 3 --replication-factor 1 --topic analyzed-logs &&
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --partitions 3 --replication-factor 1 --topic anomalies &&
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1 --topic alerts &&
+      kafka-topics --create --if-not-exists --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1 --topic incident-reports
+      "
+    networks:
+      - log-analyzer-network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - log-analyzer-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - log-analyzer-network
+
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: workforce_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d workforce_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - log-analyzer-network
+
+  # --- APPLICATION SERVICES ---
+  go-collector:
+    build: 
+      context: .
+      dockerfile: log-collector/Dockerfile
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_USER: ${KAFKA_USER:-}
+      KAFKA_PASS: ${KAFKA_PASS:-}
+      KAFKA_TLS: ${KAFKA_TLS:-false}
+      COLLECTOR_HTTP_PORT: 8081
+      BATCH_SIZE: 5
+      FLUSH_INTERVAL: 2s
+    logging: *default-logging
+    networks:
+      - log-analyzer-network
+
+  workforce-service:
+    build:
+      context: .
+      dockerfile: workforce-service/Dockerfile
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://user:password@postgres:5432/workforce_db
+      KAFKA_BROKERS: kafka:29092
+    logging: *default-logging
+    networks:
+      - log-analyzer-network
+
+  ai-service:
+    build: 
+      context: ./python-ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+      - "50051:50051"
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT}
+      OPENAI_API_VERSION: ${OPENAI_API_VERSION}
+      LLM_PROVIDER: ${LLM_PROVIDER}
+      LLM_MODEL: ${LLM_MODEL}
+      KAFKA_BROKERS: kafka:29092
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      REDIS_URL: redis://redis:6379
+    logging: *default-logging
+    networks:
+      - log-analyzer-network
+
+  go-gateway:
+    build: 
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      ai-service:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      AI_SERVICE_GRPC: ai-service:50051
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      KAFKA_BROKERS: kafka:29092
+      REDIS_URL: redis://redis:6379
+    logging: *default-logging
+    networks:
+      - log-analyzer-network
+
+  go-alerter:
+    build: 
+      context: .
+      dockerfile: alerting/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      REDIS_URL: redis:6379
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_USER: ${KAFKA_USER:-}
+      KAFKA_PASS: ${KAFKA_PASS:-}
+      KAFKA_TLS: ${KAFKA_TLS:-false}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
+      SMTP_HOST: smtp.gmail.com
+    logging: *default-logging
+    networks:
+      - log-analyzer-network
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    depends_on:
+      go-gateway:
+        condition: service_started
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    logging: *default-logging
+    networks:
+      - log-analyzer-network
+
+  # --- TOOLS ---
+  log-simulator:
+    build: 
+      context: ./log-simulator
+      dockerfile: Dockerfile
+    profiles: ["testing"]
+    depends_on:
+      go-collector:
+        condition: service_started
+    environment:
+      COLLECTOR_URL: http://go-collector:8081/api/v1/ingest/batch
+      LOG_RATE: 2
+      ERROR_RATE: 0.1
+      ANOMALY_INTERVAL: 45
+    logging: *default-logging
+    networks:
+      - log-analyzer-network
+
+  # --- MONITORING ---
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - log-analyzer-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - log-analyzer-network
+
+  log-indexer:
+    build:
+      context: .
+      dockerfile: go-services/log-indexer/Dockerfile
+    depends_on:
+      kafka:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      LOG_LEVEL: debug
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_USER: ${KAFKA_USER:-}
+      KAFKA_PASS: ${KAFKA_PASS:-}
+      KAFKA_TLS: ${KAFKA_TLS:-false}
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    logging: *default-logging
+    networks:
+      - log-analyzer-network
+
+networks:
+  log-analyzer-network:
+    driver: bridge
+
+volumes:
+  es_data:
+  postgres_data:
+  prometheus_data:
+  grafana_data:

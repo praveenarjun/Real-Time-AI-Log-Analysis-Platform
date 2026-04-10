@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: database-migration
+  namespace: forensic-platform
+spec:
+  template:
+    spec:
+      containers:
+      - name: psql
+        image: postgres:15-alpine
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: forensic-secrets
+              key: DATABASE_URL
+        command:
+        - /bin/sh
+        - -c
+        - |
+          # The DATABASE_URL is already encoded. 
+          # We just need to run it against the file.
+          psql "$DATABASE_URL" -f /migrations/001_initial_schema.sql
+        volumeMounts:
+        - name: sql-volume
+          mountPath: /migrations
+      volumes:
+      - name: sql-volume
+        configMap:
+          name: pg-migration-sql
+      restartPolicy: Never
+  backoffLimit: 2

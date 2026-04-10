@@ -1,0 +1,29 @@
+services:
+  go-collector:
+    volumes:
+      - ./go-services:/app
+    environment:
+      LOG_LEVEL: debug
+    ports:
+      - "40001:40000" # Delve debugger
+
+  ai-service:
+    volumes:
+      - ./python-ai-service:/app
+    environment:
+      DEBUG: "true"
+      PYTHONUNBUFFERED: 1
+
+  go-gateway:
+    volumes:
+      - ./go-services:/app
+    environment:
+      LOG_LEVEL: debug
+    ports:
+      - "40000:40000" # Delve debugger
+
+  go-alerter:
+    volumes:
+      - ./go-services:/app
+    environment:
+      LOG_LEVEL: debug
