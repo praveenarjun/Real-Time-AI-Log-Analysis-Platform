@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pg-migration-sql
+  namespace: forensic-platform
+data:
+  001_initial_schema.sql: |
+    -- Extensions
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+    -- 1. Departments Table
+    CREATE TABLE IF NOT EXISTS departments (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name VARCHAR(255) UNIQUE NOT NULL,
+        description TEXT,
+        manager_id UUID, -- FK to Employees (Self-ref)
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- 2. Employees Table
+    CREATE TABLE IF NOT EXISTS employees (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        employee_code VARCHAR(50) UNIQUE NOT NULL, -- Auto-generated EMP-001 logic in app layer
+        first_name VARCHAR(100) NOT NULL,
+        last_name VARCHAR(100) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        phone VARCHAR(20),
+        date_of_birth DATE,
+        gender VARCHAR(20),
+        department_id UUID REFERENCES departments(id),
+        manager_id UUID REFERENCES employees(id),
+        hire_date DATE NOT NULL,
+        position VARCHAR(100),
+        salary DECIMAL(15, 2),
+        address TEXT,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Self-ref FK for Department Manager
+    ALTER TABLE departments ADD CONSTRAINT fk_department_manager FOREIGN KEY (manager_id) REFERENCES employees(id);
+
+    -- 3. Users Table
+    CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        username VARCHAR(100) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        role VARCHAR(50) NOT NULL,
+        employee_id UUID REFERENCES employees(id),
+        refresh_token TEXT,
+        refresh_token_expiry TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+
+
+    -- 4. Attendance Table
+    CREATE TABLE IF NOT EXISTS attendance (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        employee_id UUID NOT NULL REFERENCES employees(id),
+        date DATE NOT NULL,
+        check_in TIMESTAMP WITH TIME ZONE,
+        check_out TIMESTAMP WITH TIME ZONE,
+        status VARCHAR(50) NOT NULL, -- e.g., PRESENT, ABSENT, LATE
+        notes TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(employee_id, date)
+    );
+
+
+    -- 5. LeaveRequests Table
+    CREATE TABLE IF NOT EXISTS leave_requests (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        employee_id UUID NOT NULL REFERENCES employees(id),
+        leave_type VARCHAR(50) NOT NULL, -- e.g., ANNUAL, SICK, UNPAID
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        total_days INTEGER NOT NULL,
+        reason TEXT,
+        status VARCHAR(50) DEFAULT 'PENDING',
+        approved_by_id UUID REFERENCES employees(id),
+        approved_date TIMESTAMP WITH TIME ZONE,
+        comments TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );
+
+
+    -- INDEXES
+    CREATE INDEX IX_Employee_Department ON employees (department_id) INCLUDE (first_name, last_name, is_active);
+    CREATE INDEX IX_Employee_Manager ON employees (manager_id) INCLUDE (first_name, last_name);
+    CREATE INDEX IX_Employee_Active_Dept ON employees (is_active, department_id) INCLUDE (first_name, last_name, position, salary);
+    CREATE INDEX IX_Employee_Name ON employees (last_name, first_name) INCLUDE (email, position);
+    CREATE INDEX IX_Attendance_Emp_Date ON attendance (employee_id, date);
+    CREATE INDEX IX_Attendance_Date_Status ON attendance (date, status) INCLUDE (employee_id, check_in, check_out);
+    CREATE INDEX IX_Leave_Emp_Status ON leave_requests (employee_id, status) INCLUDE (leave_type, start_date, end_date, total_days);
+    CREATE INDEX IX_Leave_Status_Date ON leave_requests (status, start_date) INCLUDE (employee_id, leave_type, total_days);
+
+    -- STORED PROCEDURES / FUNCTIONS (PostgreSQL equivalent)
+
+    -- 1. Get Monthly Attendance Report
+    CREATE OR REPLACE FUNCTION get_monthly_attendance_report(p_month INTEGER, p_year INTEGER)
+    RETURNS TABLE(employee_id UUID, total_present BIGINT, avg_hours DOUBLE PRECISION) AS $$
+    BEGIN
+        RETURN QUERY
+        SELECT 
+            a.employee_id,
+            COUNT(*) FILTER (WHERE a.status = 'PRESENT') as total_present,
+            AVG(EXTRACT(EPOCH FROM (a.check_out - a.check_in))/3600) as avg_hours
+        FROM attendance a
+        WHERE EXTRACT(MONTH FROM a.date) = p_month AND EXTRACT(YEAR FROM a.date) = p_year
+        GROUP BY a.employee_id;
+    END;
+    $$ LANGUAGE plpgsql;
+
+
+    -- 2. Calculate Leave Balance
+    CREATE OR REPLACE FUNCTION calculate_leave_balance(p_employee_id UUID, p_year INTEGER)
+    RETURNS INTEGER AS $$
+    DECLARE
+        v_used_days INTEGER;
+    BEGIN
+        SELECT COALESCE(SUM(total_days), 0)
+        INTO v_used_days
+        FROM leave_requests
+        WHERE employee_id = p_employee_id 
+          AND status = 'APPROVED'
+          AND EXTRACT(YEAR FROM start_date) = p_year;
+        
+        RETURN 30 - v_used_days; -- Assuming 30 days default
+    END;
+    $$ LANGUAGE plpgsql;
+
+    -- 3. Get Department Headcount
+    CREATE OR REPLACE FUNCTION get_department_headcount()
+    RETURNS TABLE(department_name VARCHAR, headcount BIGINT, salary_percentage DOUBLE PRECISION) AS $$
+    BEGIN
+        RETURN QUERY
+        SELECT 
+            d.name,
+            COUNT(e.id),
+            (SUM(e.salary) / SUM(SUM(e.salary)) OVER ()) * 100
+        FROM departments d
+        LEFT JOIN employees e ON d.id = e.department_id AND e.is_active = true
+        GROUP BY d.name;
+    END;
+    $$ LANGUAGE plpgsql;
