@@ -249,22 +249,7 @@ services:
     networks:
       - log-analyzer-network
 
-  log-indexer:
-    build:
-      context: .
-      dockerfile: go-services/log-indexer/Dockerfile
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      LOG_LEVEL: debug
-      KAFKA_BROKERS: kafka:29092
-      KAFKA_USER: ${KAFKA_USER:-}
-      KAFKA_PASS: ${KAFKA_PASS:-}
-      KAFKA_TLS: ${KAFKA_TLS:-false}
-    logging: *default-logging
-    networks:
-      - log-analyzer-network
+  # (log-indexer has been decommissioned following Elasticsearch removal)
 
 networks:
   log-analyzer-network:

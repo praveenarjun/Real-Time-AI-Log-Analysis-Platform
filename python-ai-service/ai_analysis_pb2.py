@@ -3,6 +3,7 @@
 # source: ai_analysis.proto
 # Protobuf Python Version: 4.25.0
 """Generated protocol buffer code."""
+
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import symbol_database as _symbol_database
@@ -12,74 +13,76 @@ from google.protobuf.internal import builder as _builder
 _sym_db = _symbol_database.Default()
 
 
-
-
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11\x61i_analysis.proto\x12\x0bloganalyzer\"\xbd\x02\n\x08LogEntry\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\ttimestamp\x18\x02 \x01(\t\x12&\n\x06source\x18\x03 \x01(\x0e\x32\x16.loganalyzer.LogSource\x12$\n\x05level\x18\x04 \x01(\x0e\x32\x15.loganalyzer.LogLevel\x12\x0f\n\x07message\x18\x05 \x01(\t\x12\x14\n\x0cservice_name\x18\x06 \x01(\t\x12\x0c\n\x04host\x18\x07 \x01(\t\x12\x35\n\x08metadata\x18\x08 \x03(\x0b\x32#.loganalyzer.LogEntry.MetadataEntry\x12\x13\n\x0bstack_trace\x18\t \x01(\t\x12\x12\n\nrequest_id\x18\n \x01(\t\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"c\n\x08LogBatch\x12\x10\n\x08\x62\x61tch_id\x18\x01 \x01(\t\x12#\n\x04logs\x18\x02 \x03(\x0b\x32\x15.loganalyzer.LogEntry\x12\x11\n\ttimestamp\x18\x03 \x01(\t\x12\r\n\x05\x63ount\x18\x04 \x01(\x05\"\x8c\x02\n\rAnomalyResult\x12\n\n\x02id\x18\x01 \x01(\t\x12&\n\x04type\x18\x02 \x01(\x0e\x32\x18.loganalyzer.AnomalyType\x12\'\n\x08severity\x18\x03 \x01(\x0e\x32\x15.loganalyzer.Severity\x12\x13\n\x0b\x64\x65scription\x18\x04 \x01(\t\x12\x17\n\x0frelated_log_ids\x18\x05 \x03(\t\x12\x12\n\nroot_cause\x18\x06 \x01(\t\x12\x17\n\x0frecommendations\x18\x07 \x03(\t\x12\x18\n\x10\x63onfidence_score\x18\x08 \x01(\x02\x12\x13\n\x0b\x64\x65tected_at\x18\t \x01(\t\x12\x14\n\x0cservice_name\x18\n \x01(\t\"\x84\x01\n\x10\x41nalysisResponse\x12-\n\tanomalies\x18\x01 \x03(\x0b\x32\x1a.loganalyzer.AnomalyResult\x12\x0f\n\x07summary\x18\x02 \x01(\t\x12\x14\n\x0chealth_score\x18\x03 \x01(\x02\x12\x1a\n\x12processing_time_ms\x18\x04 \x01(\x03\"h\n\rReportRequest\x12\x18\n\x10time_range_start\x18\x01 \x01(\t\x12\x16\n\x0etime_range_end\x18\x02 \x01(\t\x12\x10\n\x08services\x18\x03 \x03(\t\x12\x13\n\x0b\x61nomaly_ids\x18\x04 \x03(\t\"\x80\x03\n\x0eIncidentReport\x12\n\n\x02id\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\'\n\x08severity\x18\x03 \x01(\x0e\x32\x15.loganalyzer.Severity\x12\x19\n\x11\x65xecutive_summary\x18\x04 \x01(\t\x12,\n\x08timeline\x18\x05 \x03(\x0b\x32\x1a.loganalyzer.TimelineEvent\x12\x1b\n\x13root_cause_analysis\x18\x06 \x01(\t\x12\x19\n\x11impact_assessment\x18\x07 \x01(\t\x12\x19\n\x11\x61\x66\x66\x65\x63ted_services\x18\x08 \x03(\t\x12\x12\n\nrisk_score\x18\t \x01(\x02\x12\x35\n\x0frecommendations\x18\n \x01(\x0b\x32\x1c.loganalyzer.Recommendations\x12-\n\x0c\x61\x63tion_items\x18\x0b \x03(\x0b\x32\x17.loganalyzer.ActionItem\x12\x14\n\x0cgenerated_at\x18\x0c \x01(\t\"B\n\rTimelineEvent\x12\x11\n\ttimestamp\x18\x01 \x01(\t\x12\r\n\x05\x65vent\x18\x02 \x01(\t\x12\x0f\n\x07service\x18\x03 \x01(\t\"K\n\x0fRecommendations\x12\x11\n\timmediate\x18\x01 \x03(\t\x12\x12\n\nshort_term\x18\x02 \x03(\t\x12\x11\n\tlong_term\x18\x03 \x03(\t\"U\n\nActionItem\x12\x0c\n\x04task\x18\x01 \x01(\t\x12\x10\n\x08priority\x18\x02 \x01(\t\x12\x15\n\rassignee_role\x18\x03 \x01(\t\x12\x10\n\x08\x64\x65\x61\x64line\x18\x04 \x01(\t\"2\n\x0b\x43hatRequest\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x12\n\nsession_id\x18\x02 \x01(\t\"1\n\x0c\x43hatResponse\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\t\x12\x10\n\x08is_final\x18\x02 \x01(\x08\"C\n\x11PredictionRequest\x12\x14\n\x0cservice_name\x18\x01 \x01(\t\x12\x18\n\x10prediction_hours\x18\x02 \x01(\x05\"}\n\nPrediction\x12\x14\n\x0cservice_name\x18\x01 \x01(\t\x12\x14\n\x0c\x66\x61ilure_type\x18\x02 \x01(\t\x12\x13\n\x0bprobability\x18\x03 \x01(\x02\x12\x16\n\x0e\x65stimated_time\x18\x04 \x01(\t\x12\x16\n\x0erecommendation\x18\x05 \x01(\t\"B\n\x12PredictionResponse\x12,\n\x0bpredictions\x18\x01 \x03(\x0b\x32\x17.loganalyzer.Prediction\"\xe9\x01\n\x0c\x41lertRequest\x12\x12\n\nanomaly_id\x18\x01 \x01(\t\x12\'\n\x08severity\x18\x02 \x01(\x0e\x32\x15.loganalyzer.Severity\x12\r\n\x05title\x18\x03 \x01(\t\x12\x0f\n\x07message\x18\x04 \x01(\t\x12\x10\n\x08\x63hannels\x18\x05 \x03(\t\x12\x39\n\x08metadata\x18\x06 \x03(\x0b\x32\'.loganalyzer.AlertRequest.MetadataEntry\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"C\n\rAlertResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x10\n\x08\x61lert_id\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x01(\t\"\x14\n\x12HealthCheckRequest\"\x95\x01\n\x13HealthCheckResponse\x12\x0e\n\x06status\x18\x01 \x01(\t\x12>\n\x07\x64\x65tails\x18\x02 \x03(\x0b\x32-.loganalyzer.HealthCheckResponse.DetailsEntry\x1a.\n\x0c\x44\x65tailsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01*?\n\x08LogLevel\x12\t\n\x05\x44\x45\x42UG\x10\x00\x12\x08\n\x04INFO\x10\x01\x12\x08\n\x04WARN\x10\x02\x12\t\n\x05\x45RROR\x10\x03\x12\t\n\x05\x46\x41TAL\x10\x04*Q\n\tLogSource\x12\x0f\n\x0b\x41PPLICATION\x10\x00\x12\n\n\x06SERVER\x10\x01\x12\x0b\n\x07NETWORK\x10\x02\x12\x0c\n\x08\x44\x41TABASE\x10\x03\x12\x0c\n\x08SECURITY\x10\x04*7\n\x08Severity\x12\x07\n\x03LOW\x10\x00\x12\n\n\x06MEDIUM\x10\x01\x12\x08\n\x04HIGH\x10\x02\x12\x0c\n\x08\x43RITICAL\x10\x03*v\n\x0b\x41nomalyType\x12\x0f\n\x0b\x45RROR_SPIKE\x10\x00\x12\x13\n\x0f\x43\x41SCADE_FAILURE\x10\x01\x12\x13\n\x0fPATTERN_ANOMALY\x10\x02\x12\x17\n\x13RESOURCE_EXHAUSTION\x10\x03\x12\x13\n\x0fSECURITY_THREAT\x10\x04\x32\xda\x03\n\x11\x41IAnalysisService\x12\x43\n\x0b\x41nalyzeLogs\x12\x15.loganalyzer.LogBatch\x1a\x1d.loganalyzer.AnalysisResponse\x12G\n\x0eStreamAnalysis\x12\x15.loganalyzer.LogEntry\x1a\x1a.loganalyzer.AnomalyResult(\x01\x30\x01\x12I\n\x0eGenerateReport\x12\x1a.loganalyzer.ReportRequest\x1a\x1b.loganalyzer.IncidentReport\x12\x46\n\rChatAboutLogs\x12\x18.loganalyzer.ChatRequest\x1a\x19.loganalyzer.ChatResponse0\x01\x12R\n\x0fPredictFailures\x12\x1e.loganalyzer.PredictionRequest\x1a\x1f.loganalyzer.PredictionResponse\x12P\n\x0bHealthCheck\x12\x1f.loganalyzer.HealthCheckRequest\x1a .loganalyzer.HealthCheckResponse2R\n\x0c\x41lertService\x12\x42\n\tSendAlert\x12\x19.loganalyzer.AlertRequest\x1a\x1a.loganalyzer.AlertResponseB5Z3praveenchalla.local/ai-log-analyzer/proto/generatedb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b'\n\x11\x61i_analysis.proto\x12\x0bloganalyzer"\xbd\x02\n\x08LogEntry\x12\n\n\x02id\x18\x01 \x01(\t\x12\x11\n\ttimestamp\x18\x02 \x01(\t\x12&\n\x06source\x18\x03 \x01(\x0e\x32\x16.loganalyzer.LogSource\x12$\n\x05level\x18\x04 \x01(\x0e\x32\x15.loganalyzer.LogLevel\x12\x0f\n\x07message\x18\x05 \x01(\t\x12\x14\n\x0cservice_name\x18\x06 \x01(\t\x12\x0c\n\x04host\x18\x07 \x01(\t\x12\x35\n\x08metadata\x18\x08 \x03(\x0b\x32#.loganalyzer.LogEntry.MetadataEntry\x12\x13\n\x0bstack_trace\x18\t \x01(\t\x12\x12\n\nrequest_id\x18\n \x01(\t\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01"c\n\x08LogBatch\x12\x10\n\x08\x62\x61tch_id\x18\x01 \x01(\t\x12#\n\x04logs\x18\x02 \x03(\x0b\x32\x15.loganalyzer.LogEntry\x12\x11\n\ttimestamp\x18\x03 \x01(\t\x12\r\n\x05\x63ount\x18\x04 \x01(\x05"\x8c\x02\n\rAnomalyResult\x12\n\n\x02id\x18\x01 \x01(\t\x12&\n\x04type\x18\x02 \x01(\x0e\x32\x18.loganalyzer.AnomalyType\x12\'\n\x08severity\x18\x03 \x01(\x0e\x32\x15.loganalyzer.Severity\x12\x13\n\x0b\x64\x65scription\x18\x04 \x01(\t\x12\x17\n\x0frelated_log_ids\x18\x05 \x03(\t\x12\x12\n\nroot_cause\x18\x06 \x01(\t\x12\x17\n\x0frecommendations\x18\x07 \x03(\t\x12\x18\n\x10\x63onfidence_score\x18\x08 \x01(\x02\x12\x13\n\x0b\x64\x65tected_at\x18\t \x01(\t\x12\x14\n\x0cservice_name\x18\n \x01(\t"\x84\x01\n\x10\x41nalysisResponse\x12-\n\tanomalies\x18\x01 \x03(\x0b\x32\x1a.loganalyzer.AnomalyResult\x12\x0f\n\x07summary\x18\x02 \x01(\t\x12\x14\n\x0chealth_score\x18\x03 \x01(\x02\x12\x1a\n\x12processing_time_ms\x18\x04 \x01(\x03"h\n\rReportRequest\x12\x18\n\x10time_range_start\x18\x01 \x01(\t\x12\x16\n\x0etime_range_end\x18\x02 \x01(\t\x12\x10\n\x08services\x18\x03 \x03(\t\x12\x13\n\x0b\x61nomaly_ids\x18\x04 \x03(\t"\x80\x03\n\x0eIncidentReport\x12\n\n\x02id\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\'\n\x08severity\x18\x03 \x01(\x0e\x32\x15.loganalyzer.Severity\x12\x19\n\x11\x65xecutive_summary\x18\x04 \x01(\t\x12,\n\x08timeline\x18\x05 \x03(\x0b\x32\x1a.loganalyzer.TimelineEvent\x12\x1b\n\x13root_cause_analysis\x18\x06 \x01(\t\x12\x19\n\x11impact_assessment\x18\x07 \x01(\t\x12\x19\n\x11\x61\x66\x66\x65\x63ted_services\x18\x08 \x03(\t\x12\x12\n\nrisk_score\x18\t \x01(\x02\x12\x35\n\x0frecommendations\x18\n \x01(\x0b\x32\x1c.loganalyzer.Recommendations\x12-\n\x0c\x61\x63tion_items\x18\x0b \x03(\x0b\x32\x17.loganalyzer.ActionItem\x12\x14\n\x0cgenerated_at\x18\x0c \x01(\t"B\n\rTimelineEvent\x12\x11\n\ttimestamp\x18\x01 \x01(\t\x12\r\n\x05\x65vent\x18\x02 \x01(\t\x12\x0f\n\x07service\x18\x03 \x01(\t"K\n\x0fRecommendations\x12\x11\n\timmediate\x18\x01 \x03(\t\x12\x12\n\nshort_term\x18\x02 \x03(\t\x12\x11\n\tlong_term\x18\x03 \x03(\t"U\n\nActionItem\x12\x0c\n\x04task\x18\x01 \x01(\t\x12\x10\n\x08priority\x18\x02 \x01(\t\x12\x15\n\rassignee_role\x18\x03 \x01(\t\x12\x10\n\x08\x64\x65\x61\x64line\x18\x04 \x01(\t"2\n\x0b\x43hatRequest\x12\x0f\n\x07message\x18\x01 \x01(\t\x12\x12\n\nsession_id\x18\x02 \x01(\t"1\n\x0c\x43hatResponse\x12\x0f\n\x07\x63ontent\x18\x01 \x01(\t\x12\x10\n\x08is_final\x18\x02 \x01(\x08"C\n\x11PredictionRequest\x12\x14\n\x0cservice_name\x18\x01 \x01(\t\x12\x18\n\x10prediction_hours\x18\x02 \x01(\x05"}\n\nPrediction\x12\x14\n\x0cservice_name\x18\x01 \x01(\t\x12\x14\n\x0c\x66\x61ilure_type\x18\x02 \x01(\t\x12\x13\n\x0bprobability\x18\x03 \x01(\x02\x12\x16\n\x0e\x65stimated_time\x18\x04 \x01(\t\x12\x16\n\x0erecommendation\x18\x05 \x01(\t"B\n\x12PredictionResponse\x12,\n\x0bpredictions\x18\x01 \x03(\x0b\x32\x17.loganalyzer.Prediction"\xe9\x01\n\x0c\x41lertRequest\x12\x12\n\nanomaly_id\x18\x01 \x01(\t\x12\'\n\x08severity\x18\x02 \x01(\x0e\x32\x15.loganalyzer.Severity\x12\r\n\x05title\x18\x03 \x01(\t\x12\x0f\n\x07message\x18\x04 \x01(\t\x12\x10\n\x08\x63hannels\x18\x05 \x03(\t\x12\x39\n\x08metadata\x18\x06 \x03(\x0b\x32\'.loganalyzer.AlertRequest.MetadataEntry\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01"C\n\rAlertResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x10\n\x08\x61lert_id\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x01(\t"\x14\n\x12HealthCheckRequest"\x95\x01\n\x13HealthCheckResponse\x12\x0e\n\x06status\x18\x01 \x01(\t\x12>\n\x07\x64\x65tails\x18\x02 \x03(\x0b\x32-.loganalyzer.HealthCheckResponse.DetailsEntry\x1a.\n\x0c\x44\x65tailsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01*?\n\x08LogLevel\x12\t\n\x05\x44\x45\x42UG\x10\x00\x12\x08\n\x04INFO\x10\x01\x12\x08\n\x04WARN\x10\x02\x12\t\n\x05\x45RROR\x10\x03\x12\t\n\x05\x46\x41TAL\x10\x04*Q\n\tLogSource\x12\x0f\n\x0b\x41PPLICATION\x10\x00\x12\n\n\x06SERVER\x10\x01\x12\x0b\n\x07NETWORK\x10\x02\x12\x0c\n\x08\x44\x41TABASE\x10\x03\x12\x0c\n\x08SECURITY\x10\x04*7\n\x08Severity\x12\x07\n\x03LOW\x10\x00\x12\n\n\x06MEDIUM\x10\x01\x12\x08\n\x04HIGH\x10\x02\x12\x0c\n\x08\x43RITICAL\x10\x03*v\n\x0b\x41nomalyType\x12\x0f\n\x0b\x45RROR_SPIKE\x10\x00\x12\x13\n\x0f\x43\x41SCADE_FAILURE\x10\x01\x12\x13\n\x0fPATTERN_ANOMALY\x10\x02\x12\x17\n\x13RESOURCE_EXHAUSTION\x10\x03\x12\x13\n\x0fSECURITY_THREAT\x10\x04\x32\xda\x03\n\x11\x41IAnalysisService\x12\x43\n\x0b\x41nalyzeLogs\x12\x15.loganalyzer.LogBatch\x1a\x1d.loganalyzer.AnalysisResponse\x12G\n\x0eStreamAnalysis\x12\x15.loganalyzer.LogEntry\x1a\x1a.loganalyzer.AnomalyResult(\x01\x30\x01\x12I\n\x0eGenerateReport\x12\x1a.loganalyzer.ReportRequest\x1a\x1b.loganalyzer.IncidentReport\x12\x46\n\rChatAboutLogs\x12\x18.loganalyzer.ChatRequest\x1a\x19.loganalyzer.ChatResponse0\x01\x12R\n\x0fPredictFailures\x12\x1e.loganalyzer.PredictionRequest\x1a\x1f.loganalyzer.PredictionResponse\x12P\n\x0bHealthCheck\x12\x1f.loganalyzer.HealthCheckRequest\x1a .loganalyzer.HealthCheckResponse2R\n\x0c\x41lertService\x12\x42\n\tSendAlert\x12\x19.loganalyzer.AlertRequest\x1a\x1a.loganalyzer.AlertResponseB5Z3praveenchalla.local/ai-log-analyzer/proto/generatedb\x06proto3'
+)
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'ai_analysis_pb2', _globals)
-if _descriptor._USE_C_DESCRIPTORS == False:
-  _globals['DESCRIPTOR']._options = None
-  _globals['DESCRIPTOR']._serialized_options = b'Z3praveenchalla.local/ai-log-analyzer/proto/generated'
-  _globals['_LOGENTRY_METADATAENTRY']._options = None
-  _globals['_LOGENTRY_METADATAENTRY']._serialized_options = b'8\001'
-  _globals['_ALERTREQUEST_METADATAENTRY']._options = None
-  _globals['_ALERTREQUEST_METADATAENTRY']._serialized_options = b'8\001'
-  _globals['_HEALTHCHECKRESPONSE_DETAILSENTRY']._options = None
-  _globals['_HEALTHCHECKRESPONSE_DETAILSENTRY']._serialized_options = b'8\001'
-  _globals['_LOGLEVEL']._serialized_start=2432
-  _globals['_LOGLEVEL']._serialized_end=2495
-  _globals['_LOGSOURCE']._serialized_start=2497
-  _globals['_LOGSOURCE']._serialized_end=2578
-  _globals['_SEVERITY']._serialized_start=2580
-  _globals['_SEVERITY']._serialized_end=2635
-  _globals['_ANOMALYTYPE']._serialized_start=2637
-  _globals['_ANOMALYTYPE']._serialized_end=2755
-  _globals['_LOGENTRY']._serialized_start=35
-  _globals['_LOGENTRY']._serialized_end=352
-  _globals['_LOGENTRY_METADATAENTRY']._serialized_start=305
-  _globals['_LOGENTRY_METADATAENTRY']._serialized_end=352
-  _globals['_LOGBATCH']._serialized_start=354
-  _globals['_LOGBATCH']._serialized_end=453
-  _globals['_ANOMALYRESULT']._serialized_start=456
-  _globals['_ANOMALYRESULT']._serialized_end=724
-  _globals['_ANALYSISRESPONSE']._serialized_start=727
-  _globals['_ANALYSISRESPONSE']._serialized_end=859
-  _globals['_REPORTREQUEST']._serialized_start=861
-  _globals['_REPORTREQUEST']._serialized_end=965
-  _globals['_INCIDENTREPORT']._serialized_start=968
-  _globals['_INCIDENTREPORT']._serialized_end=1352
-  _globals['_TIMELINEEVENT']._serialized_start=1354
-  _globals['_TIMELINEEVENT']._serialized_end=1420
-  _globals['_RECOMMENDATIONS']._serialized_start=1422
-  _globals['_RECOMMENDATIONS']._serialized_end=1497
-  _globals['_ACTIONITEM']._serialized_start=1499
-  _globals['_ACTIONITEM']._serialized_end=1584
-  _globals['_CHATREQUEST']._serialized_start=1586
-  _globals['_CHATREQUEST']._serialized_end=1636
-  _globals['_CHATRESPONSE']._serialized_start=1638
-  _globals['_CHATRESPONSE']._serialized_end=1687
-  _globals['_PREDICTIONREQUEST']._serialized_start=1689
-  _globals['_PREDICTIONREQUEST']._serialized_end=1756
-  _globals['_PREDICTION']._serialized_start=1758
-  _globals['_PREDICTION']._serialized_end=1883
-  _globals['_PREDICTIONRESPONSE']._serialized_start=1885
-  _globals['_PREDICTIONRESPONSE']._serialized_end=1951
-  _globals['_ALERTREQUEST']._serialized_start=1954
-  _globals['_ALERTREQUEST']._serialized_end=2187
-  _globals['_ALERTREQUEST_METADATAENTRY']._serialized_start=305
-  _globals['_ALERTREQUEST_METADATAENTRY']._serialized_end=352
-  _globals['_ALERTRESPONSE']._serialized_start=2189
-  _globals['_ALERTRESPONSE']._serialized_end=2256
-  _globals['_HEALTHCHECKREQUEST']._serialized_start=2258
-  _globals['_HEALTHCHECKREQUEST']._serialized_end=2278
-  _globals['_HEALTHCHECKRESPONSE']._serialized_start=2281
-  _globals['_HEALTHCHECKRESPONSE']._serialized_end=2430
-  _globals['_HEALTHCHECKRESPONSE_DETAILSENTRY']._serialized_start=2384
-  _globals['_HEALTHCHECKRESPONSE_DETAILSENTRY']._serialized_end=2430
-  _globals['_AIANALYSISSERVICE']._serialized_start=2758
-  _globals['_AIANALYSISSERVICE']._serialized_end=3232
-  _globals['_ALERTSERVICE']._serialized_start=3234
-  _globals['_ALERTSERVICE']._serialized_end=3316
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "ai_analysis_pb2", _globals)
+if _descriptor._USE_C_DESCRIPTORS is False:
+    _globals["DESCRIPTOR"]._options = None
+    _globals[
+        "DESCRIPTOR"
+    ]._serialized_options = b"Z3praveenchalla.local/ai-log-analyzer/proto/generated"
+    _globals["_LOGENTRY_METADATAENTRY"]._options = None
+    _globals["_LOGENTRY_METADATAENTRY"]._serialized_options = b"8\001"
+    _globals["_ALERTREQUEST_METADATAENTRY"]._options = None
+    _globals["_ALERTREQUEST_METADATAENTRY"]._serialized_options = b"8\001"
+    _globals["_HEALTHCHECKRESPONSE_DETAILSENTRY"]._options = None
+    _globals["_HEALTHCHECKRESPONSE_DETAILSENTRY"]._serialized_options = b"8\001"
+    _globals["_LOGLEVEL"]._serialized_start = 2432
+    _globals["_LOGLEVEL"]._serialized_end = 2495
+    _globals["_LOGSOURCE"]._serialized_start = 2497
+    _globals["_LOGSOURCE"]._serialized_end = 2578
+    _globals["_SEVERITY"]._serialized_start = 2580
+    _globals["_SEVERITY"]._serialized_end = 2635
+    _globals["_ANOMALYTYPE"]._serialized_start = 2637
+    _globals["_ANOMALYTYPE"]._serialized_end = 2755
+    _globals["_LOGENTRY"]._serialized_start = 35
+    _globals["_LOGENTRY"]._serialized_end = 352
+    _globals["_LOGENTRY_METADATAENTRY"]._serialized_start = 305
+    _globals["_LOGENTRY_METADATAENTRY"]._serialized_end = 352
+    _globals["_LOGBATCH"]._serialized_start = 354
+    _globals["_LOGBATCH"]._serialized_end = 453
+    _globals["_ANOMALYRESULT"]._serialized_start = 456
+    _globals["_ANOMALYRESULT"]._serialized_end = 724
+    _globals["_ANALYSISRESPONSE"]._serialized_start = 727
+    _globals["_ANALYSISRESPONSE"]._serialized_end = 859
+    _globals["_REPORTREQUEST"]._serialized_start = 861
+    _globals["_REPORTREQUEST"]._serialized_end = 965
+    _globals["_INCIDENTREPORT"]._serialized_start = 968
+    _globals["_INCIDENTREPORT"]._serialized_end = 1352
+    _globals["_TIMELINEEVENT"]._serialized_start = 1354
+    _globals["_TIMELINEEVENT"]._serialized_end = 1420
+    _globals["_RECOMMENDATIONS"]._serialized_start = 1422
+    _globals["_RECOMMENDATIONS"]._serialized_end = 1497
+    _globals["_ACTIONITEM"]._serialized_start = 1499
+    _globals["_ACTIONITEM"]._serialized_end = 1584
+    _globals["_CHATREQUEST"]._serialized_start = 1586
+    _globals["_CHATREQUEST"]._serialized_end = 1636
+    _globals["_CHATRESPONSE"]._serialized_start = 1638
+    _globals["_CHATRESPONSE"]._serialized_end = 1687
+    _globals["_PREDICTIONREQUEST"]._serialized_start = 1689
+    _globals["_PREDICTIONREQUEST"]._serialized_end = 1756
+    _globals["_PREDICTION"]._serialized_start = 1758
+    _globals["_PREDICTION"]._serialized_end = 1883
+    _globals["_PREDICTIONRESPONSE"]._serialized_start = 1885
+    _globals["_PREDICTIONRESPONSE"]._serialized_end = 1951
+    _globals["_ALERTREQUEST"]._serialized_start = 1954
+    _globals["_ALERTREQUEST"]._serialized_end = 2187
+    _globals["_ALERTREQUEST_METADATAENTRY"]._serialized_start = 305
+    _globals["_ALERTREQUEST_METADATAENTRY"]._serialized_end = 352
+    _globals["_ALERTRESPONSE"]._serialized_start = 2189
+    _globals["_ALERTRESPONSE"]._serialized_end = 2256
+    _globals["_HEALTHCHECKREQUEST"]._serialized_start = 2258
+    _globals["_HEALTHCHECKREQUEST"]._serialized_end = 2278
+    _globals["_HEALTHCHECKRESPONSE"]._serialized_start = 2281
+    _globals["_HEALTHCHECKRESPONSE"]._serialized_end = 2430
+    _globals["_HEALTHCHECKRESPONSE_DETAILSENTRY"]._serialized_start = 2384
+    _globals["_HEALTHCHECKRESPONSE_DETAILSENTRY"]._serialized_end = 2430
+    _globals["_AIANALYSISSERVICE"]._serialized_start = 2758
+    _globals["_AIANALYSISSERVICE"]._serialized_end = 3232
+    _globals["_ALERTSERVICE"]._serialized_start = 3234
+    _globals["_ALERTSERVICE"]._serialized_end = 3316
 # @@protoc_insertion_point(module_scope)
