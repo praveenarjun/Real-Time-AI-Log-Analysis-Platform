@@ -1,21 +1,12 @@
 package handlers
 
 import (
-		"net/http"
-	"strconv"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 func (h *Handler) SearchLogs(c *gin.Context) {
-	query := c.Query("q")
-	level := c.Query("level")
-	service := c.Query("service")
-	from := c.Query("from")
-	to := c.Query("to")
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
-
 	// Elasticsearch search is decommissioned.
 	h.logger.Warn("Elasticsearch is disabled. Loki and Datadog are the system of record.")
 	c.JSON(http.StatusNotImplemented, gin.H{
