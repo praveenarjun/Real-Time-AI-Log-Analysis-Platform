@@ -15,7 +15,6 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
-	"praveenchalla.local/ai-log-analyzer/internal/elasticsearch"
 	"praveenchalla.local/ai-log-analyzer/internal/gateway/grpc_client"
 	"praveenchalla.local/ai-log-analyzer/internal/gateway/handlers"
 	"praveenchalla.local/ai-log-analyzer/internal/gateway/middleware"

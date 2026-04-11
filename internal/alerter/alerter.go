@@ -9,7 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"praveenchalla.local/ai-log-analyzer/internal/elasticsearch"
 	"praveenchalla.local/ai-log-analyzer/internal/models"
 	"github.com/redis/go-redis/v9"
 )
@@ -22,16 +21,14 @@ type AlertChannel interface {
 type Alerter struct {
 	channels    map[string]AlertChannel
 	redis       *redis.Client
-	es          *elasticsearch.Client
 	logger      *slog.Logger
 	mu          sync.RWMutex
 }
 
-func NewAlerter(rdb *redis.Client, es *elasticsearch.Client, logger *slog.Logger) *Alerter {
+func NewAlerter(rdb *redis.Client, logger *slog.Logger) *Alerter {
 	return &Alerter{
 		channels: make(map[string]AlertChannel),
 		redis:    rdb,
-		es:       es,
 		logger:   logger,
 	}
 }
@@ -92,14 +89,8 @@ func (a *Alerter) ProcessAlert(ctx context.Context, alert models.Alert) error {
 
 	wg.Wait()
 
-	// 3. Persist to ES
-	err = a.es.IndexLog(ctx, "alerts-history", models.LogEntry{
-		ID:        alert.ID,
-		Timestamp: time.Now(),
-		Level:     models.LogLevel(alert.Severity),
-		Message:   alert.Message,
-		Metadata:  alert.Metadata,
-	})
+	// Alert persisting to Elasticsearch is decommissioned.
+	a.logger.Debug("Alert persistent logging skipped (ES removed)", "anomaly_id", alert.AnomalyID)
 
 	return err
 }
