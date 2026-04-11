@@ -1,6 +1,6 @@
 module praveenchalla.local/ai-log-analyzer
 
-go 1.25.0
+go 1.24.0
 
 require (
 	github.com/elastic/go-elasticsearch/v8 v8.11.0
