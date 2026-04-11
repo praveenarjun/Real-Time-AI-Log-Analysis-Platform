@@ -47,10 +47,10 @@ func (a *Alerter) ProcessAlert(ctx context.Context, alert models.Alert) error {
 	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(alert.AnomalyID+alert.Title)))
 	dedupKey := fmt.Sprintf("alert_dedup:%s", hash)
 
-	set, err := a.redis.SetNX(ctx, dedupKey, "true", 5*time.Minute).Result()
-	if err != nil {
+	set, err := a.redis.Set(ctx, dedupKey, "true", 5*time.Minute).Result()
+	if err != nil && err != redis.Nil {
 		a.logger.Error("Redis deduplication check failed", "error", err)
-	} else if !set {
+	} else if err == redis.Nil || set == "" {
 		a.logger.Info("Alert suppressed due to deduplication", "anomaly_id", alert.AnomalyID)
 		return nil
 	}

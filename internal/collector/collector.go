@@ -64,7 +64,9 @@ func (c *Collector) Start(ctx context.Context) error {
 
 func (c *Collector) Stop() error {
 	for _, src := range c.sources {
-		src.Stop()
+		if err := src.Stop(); err != nil {
+			c.logger.Error("Failed to stop source", "name", src.Name(), "error", err)
+		}
 	}
 	return nil
 }

@@ -59,21 +59,18 @@ client_secret*.json
 .DS_Store
 Thumbs.db
 
-# Binaries & Large Compiled Files
-main
-cmd
-log-indexer
-log-simulator/bin/
+# Binaries & Compiled Files (root level)
+/main
+/cmd
+/log-indexer
+/log-analyzer
+# Ensure folders ending in -service are NOT ignored
+!**/[a-z]*-service/
+# Specific binary ignores for services
 workforce-service/main
 alerting/main
 api-gateway/main
 log-collector/main
-**/main
-**/[a-z]*-service
-*.exe
-*.dll
-*.so
-*.dylib
 
 # UI
 node_modules/

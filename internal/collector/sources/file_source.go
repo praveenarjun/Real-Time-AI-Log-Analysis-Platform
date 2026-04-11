@@ -50,15 +50,19 @@ func (f *FileSource) Start(ctx context.Context, output chan<- models.LogEntry) e
 
 	for _, path := range f.paths {
 		// Support globs
-		matches, _ := filepath.Glob(path)
+		matches, err := filepath.Glob(path)
+		if err != nil {
+			f.logger.Error("Failed to glob path", "path", path, "error", err)
+			continue
+		}
 		for _, match := range matches {
 			if err := f.watcher.Add(match); err != nil {
 				f.logger.Error("Failed to watch file", "path", match, "error", err)
 				continue
 			}
 			f.mu.Lock()
-			info, _ := os.Stat(match)
-			if info != nil {
+			info, err := os.Stat(match)
+			if err == nil {
 				f.positions[match] = info.Size()
 			}
 			f.mu.Unlock()
@@ -92,7 +96,9 @@ func (f *FileSource) watchLoop(ctx context.Context, output chan<- models.LogEntr
 				f.processFile(event.Name, output)
 			}
 			if event.Op&fsnotify.Create == fsnotify.Create {
-				f.watcher.Add(event.Name)
+				if err := f.watcher.Add(event.Name); err != nil {
+					f.logger.Error("Failed to add new file to watcher", "path", event.Name, "error", err)
+				}
 				f.processFile(event.Name, output)
 			}
 		case err, ok := <-f.watcher.Errors:
@@ -115,13 +121,19 @@ func (f *FileSource) processFile(path string, output chan<- models.LogEntry) {
 	}
 	defer file.Close()
 
-	info, _ := file.Stat()
+	info, err := file.Stat()
+	if err != nil {
+		return
+	}
 	if info.Size() < pos {
 		// Truncated/Rotated
 		pos = 0
 	}
 
-	_, _ = file.Seek(pos, 0)
+	_, err = file.Seek(pos, 0)
+	if err != nil {
+		return
+	}
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()

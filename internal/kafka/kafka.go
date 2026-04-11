@@ -146,10 +146,8 @@ func NewGroupConsumer(cfg config.KafkaConfig, topic string, groupID string, l *s
 	return &Consumer{reader: r}, nil
 }
 
-func (c *Consumer) Close() {
-	if err := c.reader.Close(); err != nil {
-		// log error
-	}
+func (c *Consumer) Close() error {
+	return c.reader.Close()
 }
 
 func (c *Consumer) ReadMessage(ctx context.Context) (Message, error) {

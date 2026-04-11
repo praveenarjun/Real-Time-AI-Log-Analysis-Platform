@@ -11,7 +11,6 @@ import (
 
 type Config struct {
 	Kafka         KafkaConfig         `yaml:"kafka"`
-	Elasticsearch ElasticsearchConfig `yaml:"elasticsearch"`
 	Redis         RedisConfig         `yaml:"redis"`
 	Collector     CollectorConfig     `yaml:"collector"`
 	Gateway       GatewayConfig       `yaml:"gateway"`
@@ -38,11 +37,6 @@ type KafkaConfig struct {
 	} `yaml:"topics"`
 }
 
-type ElasticsearchConfig struct {
-	URL      string `yaml:"url"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-}
 
 type RedisConfig struct {
 	URL      string `yaml:"url"`
@@ -91,7 +85,6 @@ func LoadConfig(path string) (*Config, error) {
 	config.Gateway.HTTPPort = 8080
 	config.Gateway.AIServiceGRPC = "localhost:50051"
 	config.Workforce.HTTPPort = 8082
-	config.Elasticsearch.URL = "http://localhost:9200"
 
 	// 1. Load from YAML if exists
 	if _, err := os.Stat(path); err == nil {
@@ -132,9 +125,6 @@ func overrideWithEnv(cfg *Config) {
 	if v := os.Getenv("KAFKA_KEY_PATH"); v != "" {
 		cfg.Kafka.KeyPath = v
 	}
-	if v := os.Getenv("ELASTICSEARCH_URL"); v != "" {
-		cfg.Elasticsearch.URL = v
-	}
 	if v := os.Getenv("REDIS_URL"); v != "" {
 		cfg.Redis.URL = v
 	} else if v := os.Getenv("UPSTASH_REDIS_URL"); v != "" {
@@ -173,9 +163,6 @@ func overrideWithEnv(cfg *Config) {
 func (c *Config) Validate() error {
 	if len(c.Kafka.Brokers) == 0 {
 		return fmt.Errorf("kafka brokers are required")
-	}
-	if c.Elasticsearch.URL == "" {
-		return fmt.Errorf("elasticsearch URL is required")
 	}
 	return nil
 }

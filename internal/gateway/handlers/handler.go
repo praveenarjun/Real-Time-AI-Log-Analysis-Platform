@@ -5,7 +5,6 @@ import (
 
 	"praveenchalla.local/ai-log-analyzer/internal/gateway/grpc_client"
 	"praveenchalla.local/ai-log-analyzer/internal/gateway/websocket"
-	"praveenchalla.local/ai-log-analyzer/internal/elasticsearch"
 	"praveenchalla.local/ai-log-analyzer/internal/repository"
 	"praveenchalla.local/ai-log-analyzer/pkg/metrics"
 	"github.com/redis/go-redis/v9"
@@ -13,7 +12,6 @@ import (
 
 type Handler struct {
 	aiClient    *grpc_client.AIServiceClient
-	esClient    *elasticsearch.Client
 	redisClient *redis.Client
 	wsManager   *websocket.Manager
 	metrics     *metrics.Metrics
@@ -23,7 +21,6 @@ type Handler struct {
 
 func NewHandler(
 	aiClient *grpc_client.AIServiceClient,
-	esClient *elasticsearch.Client,
 	redisClient *redis.Client,
 	wsManager *websocket.Manager,
 	metrics *metrics.Metrics,
@@ -32,7 +29,6 @@ func NewHandler(
 ) *Handler {
 	return &Handler{
 		aiClient:    aiClient,
-		esClient:    esClient,
 		redisClient: redisClient,
 		wsManager:   wsManager,
 		metrics:     metrics,

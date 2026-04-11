@@ -1,0 +1,363 @@
+import logging
+import time
+import json
+from typing import List, Dict, Any, Optional, Annotated, TypedDict
+
+from langchain_openai import ChatOpenAI, AzureChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langgraph.graph import StateGraph, START, END
+from langchain_core.messages import BaseMessage
+from langgraph.graph.message import add_messages
+
+from core.config import settings
+from agents.detector import DetectorAgent
+from agents.analyzer import AnalyzerAgent
+from agents.predictor import PredictorAgent
+from agents.reporter import ReporterAgent
+from agents.alerter import AlerterAgent
+
+logger = logging.getLogger("ai-service.supervisor")
+
+class LogAnalysisState(TypedDict):
+    # Input
+    log_batch: Dict[str, Any]
+    log_entries: List[Dict[str, Any]]
+    log_summary: Dict[str, Any]
+    
+    # Detection Results
+    anomalies_detected: bool
+    anomalies: List[Dict[str, Any]]
+    anomaly_severity: str
+    
+    # Analysis & RCA
+    root_cause: str
+    affected_services: List[str]
+    correlation_results: List[Dict[str, Any]]
+    
+    # Prediction
+    predictions: List[Dict[str, Any]]
+    risk_score: float
+    
+    # Reporting
+    incident_report: Dict[str, Any]
+    
+    # Alerting
+    should_alert: bool
+    alert_channels: List[str]
+    alert_message: str
+    
+    # Metadata & Tracking
+    messages: Annotated[List[BaseMessage], add_messages]
+    current_agent: str
+    processing_complete: bool
+    errors: List[str]
+    processing_time_ms: int
+
+class LogAnalysisSupervisor:
+    def __init__(self):
+        # 1. Initialize LLM (Dynamic Selection)
+        provider = settings.LLM_PROVIDER.lower()
+        if provider == "gemini":
+            logger.info(f"Using Google Gemini Pro: {settings.LLM_MODEL}")
+            self.llm = ChatGoogleGenerativeAI(
+                model=settings.LLM_MODEL,
+                google_api_key=settings.GOOGLE_API_KEY,
+                temperature=settings.LLM_TEMPERATURE,
+                max_retries=0 # Circuit breaker: fail fast
+            )
+        elif provider == "azure":
+            logger.info(f"Using Azure OpenAI: {settings.LLM_MODEL}")
+            self.llm = AzureChatOpenAI(
+                azure_deployment=settings.LLM_MODEL,
+                azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
+                openai_api_key=settings.AZURE_OPENAI_API_KEY,
+                openai_api_version=settings.OPENAI_API_VERSION,
+                temperature=settings.LLM_TEMPERATURE,
+                max_retries=0
+            )
+        else:
+            logger.info(f"Using OpenAI: {settings.LLM_MODEL}")
+            self.llm = ChatOpenAI(
+                model=settings.LLM_MODEL,
+                temperature=settings.LLM_TEMPERATURE,
+                api_key=settings.OPENAI_API_KEY
+            )
+
+        # 2. Initialize Agents
+        self.detector_agent = DetectorAgent(self.llm)
+        self.analyzer_agent = AnalyzerAgent(self.llm)
+        self.predictor_agent = PredictorAgent(self.llm)
+        self.reporter_agent = ReporterAgent(self.llm)
+        self.alerter_agent = AlerterAgent(self.llm)
+
+        # 3. Build Graph
+        self.graph = self._build_graph()
+        logger.info("Log Analysis Supervisor initialized with 5-agent pipeline")
+
+    def _build_graph(self):
+        builder = StateGraph(LogAnalysisState)
+
+        # Add Nodes
+        builder.add_node("preprocessor", self._preprocess_node)
+        builder.add_node("detector", self._detect_node)
+        builder.add_node("analyzer", self._analyze_node)
+        builder.add_node("predictor", self._predict_node)
+        builder.add_node("reporter", self._report_node)
+        builder.add_node("alerter", self._alert_node)
+
+        # Set Entry Point
+        builder.add_edge(START, "preprocessor")
+        builder.add_edge("preprocessor", "detector")
+
+        # Conditional Edge after detection
+        builder.add_conditional_edges(
+            "detector",
+            self._route_after_detection,
+            {
+                "analyze": "analyzer",
+                "skip": END
+            }
+        )
+
+        # Main Pipeline Chain
+        builder.add_edge("analyzer", "predictor")
+        builder.add_edge("predictor", "reporter")
+        builder.add_edge("reporter", "alerter")
+        builder.add_edge("alerter", END)
+
+        return builder.compile()
+
+    # --- Node Implementations ---
+
+    def _preprocess_node(self, state: LogAnalysisState) -> Dict[str, Any]:
+        """Telemetry normalization and statistics generation."""
+        try:
+            batch = state.get("log_batch", {})
+            entries = batch.get("logs", [])
+            
+            logger.info(f"DEBUG: Processing batch with {len(entries)} logs")
+            for i, log in enumerate(entries):
+                 if isinstance(log, dict):
+                    logger.info(f"DEBUG: LogEntry[{i}] -> Level: {log.get('level')}, Service: {log.get('service_name')}, Msg: {log.get('message')[:50]}")
+            
+            total = len(entries)
+            errors = sum(1 for l in entries if isinstance(l, dict) and str(l.get("level", "")).upper() in ["ERROR", "FATAL", "CRITICAL"])
+            services = list(set(l.get("service_name", "unknown") for l in entries if isinstance(l, dict)))
+            
+            summary = {
+                "total_count": total,
+                "error_count": errors,
+                "services": services,
+                "timestamp": batch.get("timestamp")
+            }
+            
+            logger.info(f"Preprocessed {total} logs across {len(services)} services")
+            return {"log_entries": entries, "log_summary": summary}
+        except Exception as e:
+            logger.error(f"Preprocessor node failed: {e}")
+            return {"errors": [f"Preprocessor Error: {str(e)}"]}
+
+    def _detect_node(self, state: LogAnalysisState):
+        """Runs anomaly detection with circuit breaker support."""
+        logger.info("Detector Node: Running anomaly scan")
+        
+        # Check Circuit Breaker
+        if state.get("ai_circuit_broken"):
+            logger.warning("CIRCUIT BREAKER: Skipping AI Detector due to earlier quota error.")
+            return {"anomalies_detected": True, "anomaly_severity": "info", "ai_circuit_broken": True}
+
+        try:
+            results = self.detector_agent.detect(state["log_entries"])
+            severity = results.get("max_severity") or results.get("severity") or "none"
+            logger.info(f"Detector Results [HasAnomaly: {results.get('has_anomalies')}, Severity: {severity}]")
+            return {
+                "anomalies_detected": results.get("has_anomalies", False),
+                "anomalies": results.get("anomalies", []),
+                "anomaly_severity": severity
+            }
+        except Exception as e:
+            is_429 = "429" in str(e) or "quota" in str(e).lower()
+            if is_429:
+                logger.warning(f"DETECTOR FALLBACK: AI limit reached. Activating Circuit Breaker.")
+                return {"anomalies_detected": True, "anomaly_severity": "info", "ai_circuit_broken": True}
+            
+            logger.error(f"Detector node failed: {e}")
+            # Emergency fallback: If we hit a 429, manually scan the logs for FATAL
+            entries = state.get("log_entries", [])
+            fatal_logs = [l for l in entries if isinstance(l, dict) and str(l.get("level", "")).upper() in ["FATAL", "CRITICAL"]]
+            if fatal_logs:
+                logger.warning("DETECTOR FALLBACK: Local Fatal detection activated.")
+                return {
+                    "anomalies_detected": True,
+                    "anomalies": [{"type": "CRITICAL_LOG", "message": fatal_logs[0].get("message")}],
+                    "anomaly_severity": "CRITICAL"
+                }
+            return {"anomalies_detected": False, "errors": [f"Detector Error: {str(e)}"]}
+
+    def _route_after_detection(self, state: LogAnalysisState) -> str:
+        """Determines if the pipeline should continue to expensive forensics."""
+        if state.get("anomalies_detected", False):
+            return "analyze"
+        return "skip"
+
+    def _analyze_node(self, state: LogAnalysisState):
+        """Root cause analysis with circuit breaker support."""
+        logger.info("Analyzer Node: Starting root cause investigation")
+        
+        # Check Circuit Breaker
+        if state.get("ai_circuit_broken"):
+            logger.warning("CIRCUIT BREAKER: Skipping AI Analyzer.")
+            return {"root_cause": "Circuit Breaker Active (AI Quota Over)", "affected_services": [], "ai_circuit_broken": True}
+
+        try:
+            results = self.analyzer_agent.analyze(state["log_entries"], state["anomalies"])
+            logger.info(f"Analyzer Findings: Root Cause -> {results.get('root_cause')}")
+            return {
+                "root_cause": results.get("root_cause", "Analysis Failure"),
+                "affected_services": results.get("affected_services", []),
+                "correlation_results": results.get("correlations", [])
+            }
+        except Exception as e:
+            is_429 = "429" in str(e) or "quota" in str(e).lower()
+            if is_429:
+                logger.warning(f"ANALYZER FALLBACK: AI limit reached. Activating Circuit Breaker.")
+                return {"root_cause": f"Analysis Failure (AI Quota Limit)", "ai_circuit_broken": True}
+            
+            logger.warning(f"ANALYZER FALLBACK: AI limit reached. Using local rule-sets. Error: {e}")
+            rc = "Unknown Infrastructure Failure"
+            recent_logs = state.get("log_entries", [])
+            msg = ""
+            if recent_logs and isinstance(recent_logs[0], dict):
+                msg = str(recent_logs[0].get("message", "")).lower()
+            
+            if "connection" in msg or "database" in msg: rc = "Database Connection Pool Exhaustion"
+            elif "timeout" in msg: rc = "Service Timeout or Upstream Latency Chain"
+            elif "auth" in msg or "permission" in msg: rc = "Authentication or Permission Denied"
+            
+            return {
+                "root_cause": rc + " (Local Discovery)",
+                "affected_services": list(set([l.get("service_name") for l in recent_logs if isinstance(l, dict)])),
+                "correlation_results": []
+            }
+
+    def _predict_node(self, state: LogAnalysisState):
+        """Predictive risk modeling with circuit breaker support."""
+        logger.info("Predictor Node: Forecasting failure trajectory")
+        
+        # Check Circuit Breaker
+        if state.get("ai_circuit_broken"):
+            logger.warning("CIRCUIT BREAKER: Skipping AI Predictor.")
+            return {"risk_score": 0.5, "predictions": ["Baseline Risk Assessed (AI Offline)"], "ai_circuit_broken": True}
+
+        try:
+            results = self.predictor_agent.predict(state["log_entries"], state["anomalies"])
+            return {
+                "predictions": results.get("predictions", []),
+                "risk_score": results.get("risk_score", 0.0)
+            }
+        except Exception as e:
+            is_429 = "429" in str(e) or "quota" in str(e).lower()
+            if is_429:
+                logger.warning(f"PREDICTOR FALLBACK: AI limit reached. Activating Circuit Breaker.")
+                return {"risk_score": 0.7, "predictions": ["High Volatility Predicted"], "ai_circuit_broken": True}
+            
+            logger.warning(f"PREDICTOR FALLBACK: Quota reached. Using baseline risk model. Error: {e}")
+            return {
+                "predictions": [{"forecast": "Continued instability expected (Safe-Mode)", "probability": 0.85}],
+                "risk_score": 0.9
+            }
+
+    def _report_node(self, state: LogAnalysisState):
+        """Synthesizes executive report with circuit breaker support."""
+        logger.info("Reporter Node: Synthesizing incident narrative")
+        
+        # Check Circuit Breaker
+        if state.get("ai_circuit_broken"):
+            logger.warning("CIRCUIT BREAKER: Skipping AI Reporter.")
+            return {"incident_report": {"summary": "RECOVERY MODE: System stability being restored (Local Analysis)"}, "ai_circuit_broken": True}
+
+        try:
+            results = self.reporter_agent.generate(state)
+            return {"incident_report": results}
+        except Exception as e:
+            is_429 = "429" in str(e) or "quota" in str(e).lower()
+            if is_429:
+                logger.warning(f"REPORTER FALLBACK: AI limit reached. Activating Circuit Breaker.")
+                return {"incident_report": {"summary": "Analysis Quota Exceeded. Incident details generated from local fingerprints."}, "ai_circuit_broken": True}
+            
+            logger.error(f"Reporter node failed: {e}")
+            return {"incident_report": {"summary": "Error generating report"}}
+
+    def _alert_node(self, state: LogAnalysisState) -> Dict[str, Any]:
+        """Strategic notification decision with circuit breaker support."""
+        logger.info("Alerter Node: Finalizing alerting strategy")
+        
+        # Check Circuit Breaker
+        if state.get("ai_circuit_broken"):
+            logger.warning("CIRCUIT BREAKER: Skipping AI Alerter.")
+            return {
+                "should_alert": True,
+                "alert_channels": ["log"],
+                "alert_message": f"CIRCUIT BROKEN: AI Offline. High-Priority {state.get('anomaly_severity')} incident detected.",
+                "processing_complete": True
+            }
+
+        try:
+            decision = self.alerter_agent.decide(state)
+            return {
+                "should_alert": decision.get("should_alert", False),
+                "alert_channels": decision.get("channels", []),
+                "alert_message": decision.get("message", ""),
+                "processing_complete": True
+            }
+        except Exception as e:
+            is_429 = "429" in str(e) or "quota" in str(e).lower()
+            if is_429:
+                logger.warning(f"ALERTER FALLBACK: AI limit reached. Finalizing locally.")
+                return {
+                    "should_alert": True,
+                    "alert_channels": ["log"],
+                    "alert_message": "Safe-Mode Alert: AI limit reached. Human intervention recommended.",
+                    "ai_circuit_broken": True,
+                    "processing_complete": True
+                }
+            
+            logger.error(f"Alerter node failed: {e}")
+            return {"processing_complete": True, "errors": [f"Alerter Error: {str(e)}"]}
+
+    def run(self, log_batch: Dict[str, Any]) -> Dict[str, Any]:
+        """Synchronous execution of the forensic pipeline."""
+        start_time = time.time()
+        initial_state: LogAnalysisState = {
+            "log_batch": log_batch,
+            "log_entries": [],
+            "log_summary": {},
+            "anomalies_detected": False,
+            "anomalies": [],
+            "anomaly_severity": "none",
+            "root_cause": "",
+            "affected_services": [],
+            "correlation_results": [],
+            "predictions": [],
+            "risk_score": 0.0,
+            "incident_report": {},
+            "should_alert": False,
+            "alert_channels": [],
+            "alert_message": "",
+            "messages": [],
+            "current_agent": "supervisor",
+            "processing_complete": False,
+            "errors": [],
+            "processing_time_ms": 0,
+            "ai_circuit_broken": False # Reset breaker for every batch
+        }
+
+        try:
+            final_state = self.graph.invoke(initial_state)
+            duration = int((time.time() - start_time) * 1000)
+            final_state["processing_time_ms"] = duration
+            logger.info(f"Pipeline complete in {duration}ms.")
+            return final_state
+        except Exception as e:
+            logger.error(f"Platform execution failed: {e}")
+            return {"errors": [str(e)], "processing_complete": True}

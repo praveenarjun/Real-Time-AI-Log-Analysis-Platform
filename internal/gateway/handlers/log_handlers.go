@@ -16,20 +16,12 @@ func (h *Handler) SearchLogs(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
 
-	if h.esClient == nil {
-		h.logger.Warn("Elasticsearch is disabled. Loki migration in progress.")
-		c.JSON(http.StatusNotImplemented, gin.H{"message": "Log search via API is disabled. Please query Grafana Loki directly."})
-		return
-	}
-
-	results, err := h.esClient.SearchLogs(c.Request.Context(), "logs", query, level, service, from, to, page, size)
-	if err != nil {
-		h.logger.Error("Elasticsearch search failed", "error", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to query logs"})
-		return
-	}
-	
-	c.JSON(http.StatusOK, results)
+	// Elasticsearch search is decommissioned.
+	h.logger.Warn("Elasticsearch is disabled. Loki and Datadog are the system of record.")
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"message": "Direct log search via API is disabled.",
+		"recommendation": "Please query Grafana Loki or Datadog directly for logs.",
+	})
 }
 
 func (h *Handler) GetLogByID(c *gin.Context) {

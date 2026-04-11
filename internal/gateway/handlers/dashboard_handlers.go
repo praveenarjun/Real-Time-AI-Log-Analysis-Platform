@@ -23,13 +23,17 @@ func (h *Handler) GetDashboardStats(c *gin.Context) {
 		}
 	}
 
-	// 2. Fetch Fresh Stats from ES
-	stats, err := h.esClient.GetAggregationStats(c.Request.Context(), "logs")
-	if err != nil {
-		h.logger.Error("Failed to fetch ES stats", "error", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch stats"})
-		return
+	// Elasticsearch stats are decommissioned.
+	stats := map[string]interface{}{
+		"total_logs":       0,
+		"total_anomalies":  0,
+		"critical_alerts":  0,
+		"health_score":     100,
+		"note":             "Stats migrated to Datadog/Loki",
 	}
+
+	// In a real scenario, we might fetch from Loki API here.
+	h.logger.Info("Dashboard stats requested, returning placeholder (Migrated to Datadog)")
 
 	// 3. Cache Result (10s)
 	data, _ := json.Marshal(stats)
@@ -46,13 +50,8 @@ func (h *Handler) GetSystemHealth(c *gin.Context) {
 
 	health := gin.H{
 		"api_gateway":   "UP",
-		"elasticsearch": "UP",
 		"redis":         "UP",
-	}
-
-	// ES Check
-	if err := h.esClient.PingHealth(ctx); err != nil {
-		health["elasticsearch"] = "DOWN"
+		"observability": "LOKI/DATADOG",
 	}
 
 	// Redis Check
