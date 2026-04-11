@@ -114,15 +114,9 @@ jobs:
           resource-group: ${{ env.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ env.AKS_CLUSTER_NAME }}
 
+
       - name: Deploy to Production
         run: |
           # Production follows the same logic as staging for this project
           kubectl apply -f infra/k8s/
           echo "Production Rollout Complete"
-
-      - name: Slack Notification
-        if: always()
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_MESSAGE: "🚀 Deployment to Production: ${{ job.status }}"
