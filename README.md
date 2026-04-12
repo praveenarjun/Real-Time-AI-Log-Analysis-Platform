@@ -132,4 +132,11 @@ Add these in the Cloudflare Dashboard under **Settings** -> **Environment Variab
 - `NEXT_PUBLIC_API_URL`: `http://20.200.255.31`
 - `NEXT_PUBLIC_WS_URL`: `ws://20.200.255.31/api/v1/ws/stream`
 
+### 4. Custom Domain Setup
+To use your own domain (e.g., `dashboard.yourdomain.com`):
+1.  In Cloudflare Pages, go to **Custom Domains** -> **Set up a custom domain**.
+2.  Enter your domain name.
+3.  Cloudflare will automatically provide the **CNAME** records.
+4.  Update your DNS provider (e.g., GoDaddy, Namecheap) with these CNAME records pointing to your `*.pages.dev` URL.
+
 ---
