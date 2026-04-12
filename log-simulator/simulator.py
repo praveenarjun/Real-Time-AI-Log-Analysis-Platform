@@ -77,12 +77,33 @@ def send_batch(logs):
         return False
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="AI Log Simulation Engine")
+    parser.add_argument("--scenario", type=str, help="Specific anomaly scenario to trigger immediately")
+    parser.add_argument("--rate", type=float, default=LOG_RATE, help="Logs per second")
+    args = parser.parse_args()
+
+    global LOG_RATE
+    LOG_RATE = args.rate
+
     print(f"{Fore.CYAN}=========================================={Style.RESET_ALL}")
-    print(f"{Fore.CYAN}🚀 Launching AI Log Simulator Engine...{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}🚀 Launching AI Log Simulation Engine...{Style.RESET_ALL}")
     print(f"{Fore.CYAN}Target URL: {COLLECTOR_URL}{Style.RESET_ALL}")
     print(f"{Fore.CYAN}Rate: {LOG_RATE} logs/sec | Anomaly Interval: {ANOMALY_INTERVAL}s{Style.RESET_ALL}")
     print(f"{Fore.CYAN}=========================================={Style.RESET_ALL}")
     
+    # 0. Trigger specific scenario if requested
+    if args.scenario:
+        from scenarios import SCENARIO_FUNCTIONS
+        if args.scenario in SCENARIO_FUNCTIONS:
+            print(f"{Fore.MAGENTA}🎯 TRIGGERING TARGETED SCENARIO: {args.scenario}{Style.RESET_ALL}")
+            logs = SCENARIO_FUNCTIONS[args.scenario]()
+            send_batch(logs)
+            print(f"{Fore.GREEN}✅ Scenario injected. Transitioning to normal traffic...{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.RED}❌ Unknown scenario: {args.scenario}. Available: {list(SCENARIO_FUNCTIONS.keys())}{Style.RESET_ALL}")
+            return
+
     start_time = time.time()
     last_anomaly_time = start_time
     last_stat_time = start_time

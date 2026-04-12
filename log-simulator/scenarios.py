@@ -134,12 +134,44 @@ def certificate_expiry():
         
     return logs
 
+def silent_poison():
+    """OAuth token corruption -> subtle auth failures in downstream services"""
+    logs = []
+    logs.append(generate_log_entry("auth-service", "WARN", "Detected unusual hash collision in JWT signature generation", {"algorithm": "RS256", "collision_prob": 0.0001}))
+    
+    # Cascade starts
+    affected = ["payment-gateway", "user-profile", "inventory-api"]
+    for _ in range(30):
+        svc = random.choice(affected)
+        logs.append(generate_log_entry(svc, "ERROR", "Invalid bearer token format. Failed to decode claims.", {"reason": "SIGNATURE_MISMATCH", "issuer": "auth-service"}))
+    
+    logs.append(generate_log_entry("auth-service", "CRITICAL", "Memory corruption detected in RSA private key buffer. Rotating keys now.", {"action": "emergency_rotation"}))
+    return logs
+
+def resource_throttling():
+    """Network saturation on a specific cluster -> cascading latency"""
+    logs = []
+    service = "db-cluster-01"
+    
+    logs.append(generate_log_entry(service, "WARN", "Increased packet loss on eth0 interface", {"packet_loss": "12%"}))
+    
+    affected = ["auth-service", "payment-gateway", "search-engine"]
+    for _ in range(40):
+        svc = random.choice(affected)
+        latency = random.randint(2000, 5000)
+        logs.append(generate_log_entry(svc, "ERROR", f"Upstream service {service} took {latency}ms to respond. Circuit breaker TRIPPED.", {"latency_ms": latency, "threshold_ms": 1000}))
+    
+    logs.append(generate_log_entry("api-gateway", "CRITICAL", "Cascading timeout failure. Global SLA breach detected.", {"availability": "88.4%"}))
+    return logs
+
 SCENARIO_FUNCTIONS = {
     "database_cascade": database_cascade,
     "memory_leak": memory_leak,
     "ddos_attack": ddos_attack,
     "disk_full": disk_full,
-    "certificate_expiry": certificate_expiry
+    "certificate_expiry": certificate_expiry,
+    "silent_poison": silent_poison,
+    "resource_throttling": resource_throttling
 }
 
 def check_anomaly():
