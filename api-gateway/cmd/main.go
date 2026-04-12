@@ -121,6 +121,21 @@ func main() {
 	router.Use(gin.Recovery())
 	router.Use(middleware.CORSMiddleware())
 
+	// 8.5 Ingestion Proxy Bridge (Bypasses Rate Limiting)
+	// Routes /api/v1/ingest/* to the internal go-collector service
+	router.Any("/api/v1/ingest/*proxyPath", func(c *gin.Context) {
+		target := "http://go-collector.forensic-platform.svc.cluster.local"
+		remote, err := url.Parse(target)
+		if err != nil {
+			l.Error("Failed to parse collector proxy target", "error", err)
+			c.JSON(502, gin.H{"error": "Collector Gateway unavailable"})
+			return
+		}
+
+		proxy := httputil.NewSingleHostReverseProxy(remote)
+		proxy.ServeHTTP(c.Writer, c.Request)
+	})
+
 	// Apply Redis Rate Limiting Middleware
 	router.Use(middleware.RateLimitMiddleware(rdb, l))
 
@@ -146,24 +161,6 @@ func main() {
 		api.GET("/workforce/headcount", h.GetDepartmentHeadcount)
 	}
 
-	// 8.5 Ingestion Proxy Bridge
-	// Routes /api/v1/ingest/* to the internal go-collector service
-	router.Any("/api/v1/ingest/*proxyPath", func(c *gin.Context) {
-		target := "http://go-collector.forensic-platform.svc.cluster.local"
-		remote, err := url.Parse(target)
-		if err != nil {
-			l.Error("Failed to parse collector proxy target", "error", err)
-			c.JSON(502, gin.H{"error": "Collector Gateway unavailable"})
-			return
-		}
-
-		proxy := httputil.NewSingleHostReverseProxy(remote)
-		
-		// Optional: Override Director to handle path rewriting if needed
-		// In this case, the collector expects /api/v1/ingest/batch, which is what we receive
-		
-		proxy.ServeHTTP(c.Writer, c.Request)
-	})
 
 	// 9. Graceful Shutdown HTTP Server
 	srv := &http.Server{

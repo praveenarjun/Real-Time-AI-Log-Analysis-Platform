@@ -90,8 +90,8 @@ func RateLimitMiddleware(rdb *redis.Client, logr *slog.Logger) gin.HandlerFunc {
 			rdb.Expire(ctx, key, time.Minute)
 		}
 
-		if count > 100 {
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "Rate limit exceeded (100 req/min)"})
+		if count > 5000 {
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"error": "Rate limit exceeded (5000 req/min)"})
 			return
 		}
 
