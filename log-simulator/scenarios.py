@@ -17,16 +17,21 @@ def generate_log_entry(service, level, message, metadata=None):
     if metadata is None:
         metadata = {}
     
+    # Ensure all metadata values are strings to match Go's map[string]string
+    sanitized_metadata = {k: str(v) for k, v in metadata.items()}
+    
     return {
         "id": str(uuid.uuid4()),
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "service": service,
+        "service_name": service,
+        "source": "APPLICATION",
+        "host": "simulator-node-01",
         "level": level,
         "message": message,
         "metadata": {
             "environment": "production",
             "region": "us-east-1",
-            **metadata
+            **sanitized_metadata
         }
     }
 

@@ -1,129 +1,169 @@
 "use client";
 
-import GlassCard from "../components/GlassCard";
-import { Users, UserPlus, Search, Filter, History, UserCheck, Clock } from "lucide-react";
+export const dynamic = "force-dynamic";
 
-export default function Workforce() {
-  const employees = [
-    { id: 'EMP-001', name: 'John Doe', dept: 'Engineering', role: 'Staff SRE', status: 'Active', hireDate: '2023-01-15' },
-    { id: 'EMP-002', name: 'Jane Smith', dept: 'Security', role: 'Lead Architect', status: 'Active', hireDate: '2022-06-20' },
-    { id: 'EMP-003', name: 'Robert Brown', dept: 'Operations', role: 'Senior SRE', status: 'On Leave', hireDate: '2021-03-12' },
-    { id: 'EMP-004', name: 'Emily White', dept: 'Engineering', role: 'DevOps Engineer', status: 'Active', hireDate: '2024-02-01' },
-  ];
+import React, { useState, useEffect } from "react";
+import GlassCard from "../components/GlassCard";
+import { 
+  Users, 
+  UserPlus, 
+  Briefcase, 
+  MapPin, 
+  Mail,
+  PieChart as PieChartIcon
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function WorkforcePage() {
+  const [employees, setEmployees] = useState([]);
+  const [stats, setStats] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        
+        // Fetch Employees
+        const empRes = await fetch(`${baseUrl}/api/v1/workforce/employees`);
+        if (empRes.ok) {
+          const data = await empRes.json();
+          setEmployees(data.employees || []);
+        }
+
+        // Fetch Headcount Stats
+        const statsRes = await fetch(`${baseUrl}/api/v1/workforce/headcount`);
+        if (statsRes.ok) {
+          const data = await statsRes.json();
+          setStats(data.headcount || []);
+        }
+      } catch (err) {
+        console.warn("Backend unavailable", err);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
-    <div className="space-y-8 animate-in">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Workforce Management</h1>
-          <p className="text-[#94a3b8] text-sm mt-1">Resource allocation and department health tracking.</p>
+    <div className="space-y-10 max-w-[1400px]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2 border-b border-white/5">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+             <div className="p-2 rounded-lg bg-accent-blue/10 border border-accent-blue/20">
+                <Users className="w-6 h-6 text-accent-blue" />
+             </div>
+             <h1 className="text-3xl font-black text-white tracking-tight uppercase">Workforce Intelligence</h1>
+          </div>
+          <p className="text-text-secondary text-sm font-medium tracking-wide">
+             Strategic employee demographics and departmental headcount distribution.
+          </p>
         </div>
-        <div className="flex gap-3">
-          <button className="px-4 py-2 rounded-xl text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/50 hover:bg-emerald-500/20 transition-all flex items-center gap-2">
-            <UserPlus className="w-4 h-4" />
-            ADD EMPLOYEE
-          </button>
-           <button className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-white/5 border border-white/10 hover:bg-white/10 transition-all flex items-center gap-2">
-            <History className="w-4 h-4" />
-            ATTENDANCE LOGS
-          </button>
-        </div>
-      </header>
 
-      {/* Stats Quick View */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <GlassCard className="flex items-center gap-4">
-           <div className="p-3 rounded-2xl bg-cyan-500/10 text-cyan-400">
-             <Users className="w-6 h-6" />
-           </div>
-           <div>
-              <div className="text-2xl font-bold text-white">42</div>
-              <div className="text-[10px] text-[#64748b] font-bold tracking-widest uppercase">Total Headcount</div>
-           </div>
-        </GlassCard>
-        <GlassCard className="flex items-center gap-4">
-           <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400">
-             <UserCheck className="w-6 h-6" />
-           </div>
-           <div>
-              <div className="text-2xl font-bold text-white">38</div>
-              <div className="text-[10px] text-[#64748b] font-bold tracking-widest uppercase">Currently Active</div>
-           </div>
-        </GlassCard>
-        <GlassCard className="flex items-center gap-4">
-           <div className="p-3 rounded-2xl bg-fuchsia-500/10 text-fuchsia-400">
-             <Clock className="w-6 h-6" />
-           </div>
-           <div>
-              <div className="text-2xl font-bold text-white">96%</div>
-              <div className="text-[10px] text-[#64748b] font-bold tracking-widest uppercase">Attendance Rate</div>
-           </div>
-        </GlassCard>
+        <button className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/5 rounded-2xl text-xs font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all">
+           <UserPlus className="w-4 h-4" /> ADD EMPLOYEE
+        </button>
       </div>
 
-      <GlassCard className="p-0 overflow-hidden border-[#1e293b]">
-        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-          <div className="flex items-center gap-4 bg-white/5 px-4 py-2 rounded-xl border border-white/10 w-96">
-            <Search className="w-4 h-4 text-[#64748b]" />
-            <input 
-              type="text" 
-              placeholder="Search by ID or name..." 
-              className="bg-transparent border-none outline-none text-xs text-white w-full"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-[#94a3b8] transition-all">
-               <Filter className="w-4 h-4" />
-            </button>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Department Stats */}
+        <div className="space-y-8">
+           <GlassCard title="Headcount Distribution" subtitle="Active employees per department">
+              <div className="space-y-6">
+                 {stats.length === 0 ? (
+                    [
+                      { department: "ENGINEERING", count: 24, progress: 85, color: "cyan" },
+                      { department: "SECURITY", count: 12, progress: 45, color: "fuchsia" },
+                      { department: "OPERATIONS", count: 18, progress: 65, color: "blue" },
+                    ].map((dept, idx) => (
+                      <div key={idx} className="space-y-3">
+                         <div className="flex justify-between items-center text-[10px] font-black tracking-widest uppercase">
+                            <span className="text-white">{dept.department}</span>
+                            <span className={`text-accent-${dept.color}`}>{dept.count}</span>
+                         </div>
+                         <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${dept.progress}%` }}
+                              className={`h-full bg-accent-${dept.color} rounded-full`} 
+                            />
+                         </div>
+                      </div>
+                    ))
+                 ) : (
+                    stats.map((dept, idx) => (
+                      <div key={idx} className="space-y-2">
+                         <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-white">{dept.department_name}</span>
+                            <span className="text-xs font-bold text-accent-cyan">{dept.count}</span>
+                         </div>
+                         <div className="w-full h-1 bg-white/5 rounded-full">
+                            <div className="h-full bg-accent-cyan rounded-full" style={{ width: `${(dept.count / 50) * 100}%` }} />
+                         </div>
+                      </div>
+                    ))
+                 )}
+              </div>
+           </GlassCard>
+
+           <GlassCard className="bg-gradient-to-br from-accent-blue/10 to-transparent border-accent-blue/20">
+              <div className="flex items-center gap-3 mb-4">
+                 <PieChartIcon className="w-4 h-4 text-accent-blue" />
+                 <h3 className="text-[10px] font-black text-white uppercase tracking-widest">Growth Metric</h3>
+              </div>
+              <p className="text-[10px] text-text-secondary font-medium leading-relaxed">
+                Workforce capacity has increased by <span className="text-white">8%</span> this quarter. Planned expansion in the AI Forensics division is on track.
+              </p>
+           </GlassCard>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-white/5 bg-white/[0.01]">
-                <th className="px-6 py-4 text-[10px] font-bold text-[#64748b] uppercase tracking-widest">Employee Code</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-[#64748b] uppercase tracking-widest">Name</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-[#64748b] uppercase tracking-widest">Department</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-[#64748b] uppercase tracking-widest">Position</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-[#64748b] uppercase tracking-widest">Status</th>
-                <th className="px-6 py-4 text-[10px] font-bold text-[#64748b] uppercase tracking-widest">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm">
-              {employees.map((emp, idx) => (
-                <tr key={idx} className="border-b border-white/5 last:border-none hover:bg-white/[0.03] transition-all group">
-                  <td className="px-6 py-4 font-mono text-cyan-400 font-bold">{emp.id}</td>
-                  <td className="px-6 py-4 font-bold text-white">{emp.name}</td>
-                  <td className="px-6 py-4 text-[#94a3b8]">{emp.dept}</td>
-                  <td className="px-6 py-4 text-[#64748b] font-medium">{emp.role}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase ${
-                      emp.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-status-warn/10 text-status-warn border border-status-warn/30'
-                    }`}>
-                      {emp.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button className="text-xs font-bold text-cyan-400 hover:text-white transition-colors duration-300">
-                      EDIT PROFILE
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Employee Directory */}
+        <div className="lg:col-span-2">
+           <GlassCard title="Directory Master List" subtitle="Recent hires and active team members">
+              <div className="space-y-4">
+                 {employees.length === 0 ? (
+                   <div className="py-12 flex flex-col items-center justify-center opacity-20 italic">
+                      <Users className="w-8 h-8 mb-2" />
+                      <p className="text-[10px] font-black tracking-widest uppercase">No Active Records Found</p>
+                   </div>
+                 ) : (
+                   employees.map((emp, idx) => (
+                    <div key={idx} className="flex flex-col md:flex-row md:items-center justify-between p-6 rounded-3xl bg-white/5 border border-white/5 hover:border-accent-blue/30 transition-all group">
+                       <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-white/10 to-transparent flex items-center justify-center text-sm font-black text-white">
+                             {emp.first_name[0]}{emp.last_name[0]}
+                          </div>
+                          <div>
+                             <h4 className="text-sm font-black text-white tracking-wide">{emp.first_name} {emp.last_name}</h4>
+                             <div className="flex items-center gap-3 mt-1">
+                                <span className="text-[10px] font-bold text-accent-blue uppercase tracking-widest">{emp.position}</span>
+                                <span className="w-1 h-1 rounded-full bg-white/20" />
+                                <span className="text-[10px] font-medium text-text-secondary uppercase tracking-widest">{emp.department_name}</span>
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="flex gap-6 mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-white/5">
+                          <div className="flex flex-col items-end">
+                             <div className="flex items-center gap-2 text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-1">
+                                <Mail className="w-3 h-3" /> {emp.email}
+                             </div>
+                             <div className="flex items-center gap-2 text-[10px] font-bold text-text-secondary uppercase tracking-widest">
+                                <MapPin className="w-3 h-3" /> {emp.address || "Main Branch"}
+                             </div>
+                          </div>
+                          <div className="flex items-center">
+                             <div className="p-2 rounded-xl bg-white/5 text-text-secondary group-hover:text-white transition-colors cursor-pointer">
+                                <Briefcase className="w-4 h-4" />
+                             </div>
+                          </div>
+                       </div>
+                    </div>
+                  ))
+                 )}
+              </div>
+           </GlassCard>
         </div>
-        
-        <footer className="p-4 bg-white/[0.01] border-t border-white/5 flex justify-center">
-           <div className="flex gap-2">
-              <button className="px-3 py-1 bg-white/5 rounded-lg text-xs font-bold text-[#64748b] hover:text-white transition-all">PREV</button>
-              <button className="px-3 py-1 bg-cyan-500/10 rounded-lg text-xs font-bold text-cyan-400 border border-cyan-500/20">1</button>
-              <button className="px-3 py-1 bg-white/5 rounded-lg text-xs font-bold text-[#64748b] hover:text-white transition-all text-center">2</button>
-              <button className="px-3 py-1 bg-white/5 rounded-lg text-xs font-bold text-[#64748b] hover:text-white transition-all text-center">NEXT</button>
-           </div>
-        </footer>
-      </GlassCard>
+      </div>
     </div>
   );
 }

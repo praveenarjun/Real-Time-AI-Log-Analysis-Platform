@@ -12,21 +12,8 @@ spec:
     metadata:
       labels:
         app: go-gateway
-      annotations:
-        ad.datadoghq.com/gateway.logs: '[{"source": "go", "service": "api-gateway"}]'
-        ad.datadoghq.com/gateway.check_names: '["postgres"]'
-        ad.datadoghq.com/gateway.init_configs: '[{}]'
-        ad.datadoghq.com/gateway.instances: |
-          [
-            {
-              "host": "PLACEHOLDER_DB_HOST",
-              "port":"6543",
-              "username":"PLACEHOLDER_DB_USER", 
-              "password":"PLACEHOLDER_DB_PASS",
-              "ssl": "require",
-              "dbname": "postgres"
-            }
-          ]
+        annotations:
+          ad.datadoghq.com/gateway.logs: '[{"source": "go", "service": "api-gateway"}]'
     spec:
       volumes:
       - name: kafka-certs-vol

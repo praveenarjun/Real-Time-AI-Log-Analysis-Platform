@@ -1,0 +1,22 @@
+
+> ai-log-analyzer-frontend@0.1.0 dev
+> next dev
+
+   ▲ Next.js 14.1.0
+   - Local:        http://localhost:3000
+   - Environments: .env.local
+
+ ✓ Ready in 1743ms
+ ○ Compiling / ...
+ ✓ Compiled / in 3.9s (2270 modules)
+ ⨯ src/app/components/LiveLogStream.js (65:9) @ AnimatePresence
+ ⨯ ReferenceError: AnimatePresence is not defined
+    at LiveLogStream (./src/app/components/LiveLogStream.js:161:103)
+[0m [90m 63 |[39m         className[33m=[39m[32m"flex-1 bg-black/40 rounded-xl border border-white/5 p-4 overflow-y-auto space-y-2 terminal-font custom-scrollbar"[39m[0m
+[0m [90m 64 |[39m       [33m>[39m[0m
+[0m[31m[1m>[22m[39m[90m 65 |[39m         [33m<[39m[33mAnimatePresence[39m initial[33m=[39m{[36mfalse[39m}[33m>[39m[0m
+[0m [90m    |[39m         [31m[1m^[22m[39m[0m
+[0m [90m 66 |[39m           {[33m![39mmounted [33m?[39m ([0m
+[0m [90m 67 |[39m              [33m<[39m[33mdiv[39m className[33m=[39m[32m"h-full flex items-center justify-center"[39m[33m>[39m[0m
+[0m [90m 68 |[39m                 [33m<[39m[33mdiv[39m className[33m=[39m[32m"w-6 h-6 border-2 border-accent-cyan/20 border-t-accent-cyan rounded-full animate-spin"[39m [33m/[39m[33m>[39m[0m
+[?25h

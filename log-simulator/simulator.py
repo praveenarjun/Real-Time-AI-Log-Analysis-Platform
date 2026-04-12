@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger("Simulator")
 
 # Environment Config
-COLLECTOR_URL = os.getenv("COLLECTOR_URL", "http://localhost:8081/api/v1/logs")
+COLLECTOR_URL = os.getenv("COLLECTOR_URL", "http://localhost:8081/api/v1/ingest/batch")
 LOG_RATE = float(os.getenv("LOG_RATE", "10"))  # Logs per second
 ERROR_RATE = float(os.getenv("ERROR_RATE", "0.05"))
 ANOMALY_INTERVAL = int(os.getenv("ANOMALY_INTERVAL", "60"))

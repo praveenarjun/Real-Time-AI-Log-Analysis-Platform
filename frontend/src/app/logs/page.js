@@ -1,121 +1,132 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+export const dynamic = "force-dynamic";
+
+import React, { useState, useEffect } from "react";
 import GlassCard from "../components/GlassCard";
-import { Terminal, Download, Trash2, Play, Pause, Search } from "lucide-react";
+import LiveLogStream from "../components/LiveLogStream";
+import { 
+  Terminal, 
+  Search, 
+  Filter, 
+  Download, 
+  Trash2,
+  Calendar
+} from "lucide-react";
+import { motion } from "framer-motion";
 
-export default function LogViewer() {
+export default function LogsPage() {
   const [logs, setLogs] = useState([]);
-  const [isStreaming, setIsStreaming] = useState(true);
-  const [filter, setFilter] = useState("");
-  const scrollRef = useRef(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterLevel, setFilterLevel] = useState("ALL");
 
-  // Simulation for demonstration
   useEffect(() => {
-    if (!isStreaming) return;
-    
-    const interval = setInterval(() => {
-      const newLog = {
-        id: Math.random().toString(36).substr(2, 9),
-        timestamp: new Date().toISOString(),
-        level: Math.random() > 0.1 ? 'INFO' : 'ERROR',
-        service: ['auth-service', 'api-gateway', 'payment-node'][Math.floor(Math.random() * 3)],
-        message: 'Handling incoming request - Status: 200 OK'
-      };
-      
-      setLogs(prev => [...prev.slice(-49), newLog]);
-    }, 1200);
+    const fetchLogs = async () => {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        const res = await fetch(`${baseUrl}/api/v1/logs?limit=100`);
+        if (res.ok) {
+          const data = await res.json();
+          setLogs(data.logs || []);
+        }
+      } catch (err) {
+        console.warn("Backend unavailable", err);
+      }
+    };
 
+    fetchLogs();
+    const interval = setInterval(fetchLogs, 5000);
     return () => clearInterval(interval);
-  }, [isStreaming]);
+  }, []);
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [logs]);
+  const filteredLogs = logs.filter(log => {
+    const matchesSearch = log.message?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesLevel = filterLevel === "ALL" || log.level === filterLevel;
+    return matchesSearch && matchesLevel;
+  });
 
   return (
-    <div className="h-full flex flex-col space-y-6 animate-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Live Log Stream</h1>
-          <p className="text-[#94a3b8] text-sm mt-1">Real-time telemetry from all connected services.</p>
+    <div className="space-y-8 max-w-[1400px]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-black text-white tracking-tight uppercase">Forensic Logs</h1>
+          <p className="text-text-secondary text-sm font-medium tracking-wide">
+            Real-time telemetry and distributed system trace events.
+          </p>
         </div>
-        <div className="flex gap-3">
-          <button 
-            onClick={() => setIsStreaming(!isStreaming)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all border ${
-              isStreaming ? 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/50' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/50'
-            }`}
-          >
-            {isStreaming ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            {isStreaming ? "PAUSE STREAM" : "RESUME STREAM"}
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
-            <Download className="w-4 h-4" />
-            EXPORT
-          </button>
+
+        <div className="flex gap-4">
+           <button className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/5 rounded-xl text-xs font-bold text-text-secondary hover:text-white transition-all">
+              <Download className="w-4 h-4" /> EXPORT
+           </button>
+           <button className="flex items-center gap-2 px-4 py-2 bg-status-error/10 border border-status-error/20 rounded-xl text-xs font-bold text-status-error hover:bg-status-error/20 transition-all">
+              <Trash2 className="w-4 h-4" /> CLEAR
+           </button>
         </div>
       </div>
 
-      <GlassCard className="flex-1 min-h-0 flex flex-col p-0 overflow-hidden">
-        <header className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-white/[0.02]">
-          <div className="flex items-center gap-3 text-xs font-bold text-[#64748b]">
-            <Terminal className="w-4 h-4 text-cyan-400" />
-            <span className="tracking-widest uppercase">Streaming raw telemetry</span>
-          </div>
-          <div className="flex items-center gap-4">
-             <div className="flex items-center gap-2 bg-white/5 px-4 py-1.5 rounded-lg border border-white/10">
-                <Search className="w-3 h-3 text-[#64748b]" />
-                <input 
-                  type="text" 
-                  placeholder="Filter logs..." 
-                  className="bg-transparent border-none outline-none text-[10px] text-white w-40"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                />
-             </div>
-             <button 
-                onClick={() => setLogs([])}
-                className="text-[#64748b] hover:text-status-error transition-colors"
-             >
-                <Trash2 className="w-4 h-4" />
-             </button>
-          </div>
-        </header>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* Filters Sidebar */}
+        <div className="space-y-6">
+           <GlassCard title="Search & Filter">
+              <div className="space-y-6">
+                 <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+                    <input 
+                      type="text" 
+                      placeholder="Search messages..." 
+                      className="w-full bg-black/20 border border-white/5 rounded-xl pl-10 pr-4 py-3 text-xs text-white placeholder:text-text-secondary focus:outline-none focus:border-accent-cyan/50 transition-all"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                 </div>
 
-        <div 
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto p-6 space-y-3 terminal-font text-xs"
-        >
-          {logs.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-[#64748b] gap-2">
-               <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-ping" />
-               Waiting for incoming logs...
-            </div>
-          ) : logs.map((log) => (
-            <div key={log.id} className="grid grid-cols-[160px_80px_120px_1fr] gap-4 p-2 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/5 transition-all group">
-              <span className="text-[#64748b] shrink-0 font-medium">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
-              <span className={`font-bold px-2 py-0.5 rounded text-[10px] w-fit ${
-                log.level === 'ERROR' ? 'bg-status-error/10 text-status-error' : 'bg-cyan-500/10 text-cyan-400'
-              }`}>{log.level}</span>
-              <span className="text-white font-semibold truncate group-hover:text-fuchsia-400 transition-colors uppercase tracking-tight">{log.service}</span>
-              <span className="text-[#94a3b8] break-all">{log.message}</span>
-            </div>
-          ))}
+                 <div className="space-y-3">
+                    <label className="text-[10px] font-bold text-text-secondary uppercase tracking-[0.2em] px-1">Severity Level</label>
+                    <div className="flex flex-wrap gap-2">
+                       {['ALL', 'INFO', 'WARN', 'ERROR'].map(level => (
+                         <button 
+                            key={level}
+                            onClick={() => setFilterLevel(level)}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-widest transition-all
+                                       ${filterLevel === level ? 'bg-accent-cyan text-white shadow-[0_0_15px_rgba(6,182,212,0.4)]' : 'bg-white/5 text-text-secondary hover:bg-white/10'}`}
+                         >
+                           {level}
+                         </button>
+                       ))}
+                    </div>
+                 </div>
+
+                 <div className="pt-4 border-t border-white/5">
+                    <div className="flex items-center gap-2 text-text-secondary mb-4">
+                       <Calendar className="w-4 h-4" />
+                       <span className="text-[10px] font-bold uppercase tracking-widest">Date Range</span>
+                    </div>
+                    <div className="p-3 bg-black/20 rounded-xl border border-white/5 text-[10px] text-white/40 font-bold text-center">
+                       LAST 24 HOURS (Default)
+                    </div>
+                 </div>
+              </div>
+           </GlassCard>
+
+           <GlassCard className="bg-accent-cyan/5 border-accent-cyan/20">
+              <div className="flex items-center gap-3 mb-4">
+                 <Filter className="w-4 h-4 text-accent-cyan" />
+                 <h3 className="text-[10px] font-black text-white uppercase tracking-widest">Active Filters</h3>
+              </div>
+              <p className="text-[10px] text-text-secondary font-medium italic leading-relaxed">
+                Currently monitoring all nodes with real-time ingestion enabled. No restrictive proxies applied.
+              </p>
+           </GlassCard>
         </div>
-        
-        <footer className="h-10 border-t border-white/5 bg-white/[0.01] px-6 flex items-center justify-between">
-           <div className="text-[10px] text-[#64748b] font-medium tracking-wide">
-              CONNECTED NODES: 8 | BUFFER: {logs.length}/50
-           </div>
-           <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Live</span>
-           </div>
-        </footer>
-      </GlassCard>
+
+        {/* Main Log View */}
+        <div className="lg:col-span-3">
+           <GlassCard className="h-full">
+              <LiveLogStream logs={filteredLogs} />
+           </GlassCard>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,0 +1,64 @@
+
+> ai-log-analyzer-frontend@0.1.0 build
+> next build
+
+   ▲ Next.js 14.1.0
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+Failed to compile.
+
+./src/app/globals.css.webpack[javascript/auto]!=!./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[11].oneOf[12].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[11].oneOf[12].use[3]!./src/app/globals.css
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    at at (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/tailwindcss/dist/lib.js:38:1643)
+    at LazyResult.runOnRoot (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/node_modules/postcss/lib/lazy-result.js:329:16)
+    at LazyResult.runAsync (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/node_modules/postcss/lib/lazy-result.js:258:26)
+    at LazyResult.async (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/node_modules/postcss/lib/lazy-result.js:160:30)
+    at LazyResult.then (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/node_modules/postcss/lib/lazy-result.js:404:17)
+
+Import trace for requested module:
+./src/app/globals.css.webpack[javascript/auto]!=!./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[11].oneOf[12].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[11].oneOf[12].use[3]!./src/app/globals.css
+./src/app/globals.css
+
+./src/app/globals.css
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    at at (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/tailwindcss/dist/lib.js:38:1643)
+    at LazyResult.runOnRoot (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/node_modules/postcss/lib/lazy-result.js:329:16)
+    at LazyResult.runAsync (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/node_modules/postcss/lib/lazy-result.js:258:26)
+    at LazyResult.async (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/node_modules/postcss/lib/lazy-result.js:160:30)
+    at LazyResult.then (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/node_modules/postcss/lib/lazy-result.js:404:17)
+    at tryRunOrWebpackError (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:28:311563)
+    at __webpack_require_module__ (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:28:131195)
+    at __nested_webpack_require_153754__ (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:28:130634)
+    at /Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:28:131487
+    at symbolIterator (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/neo-async/async.js:1:14444)
+    at done (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/neo-async/async.js:1:14824)
+    at Hook.eval [as callAsync] (eval at create (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:13:28867), <anonymous>:15:1)
+    at Hook.CALL_ASYNC_DELEGATE [as _callAsync] (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:13:26021)
+    at /Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:28:130354
+    at symbolIterator (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/neo-async/async.js:1:14402)
+-- inner error --
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    at at (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/tailwindcss/dist/lib.js:38:1643)
+    at LazyResult.runOnRoot (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/node_modules/postcss/lib/lazy-result.js:329:16)
+    at LazyResult.runAsync (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/node_modules/postcss/lib/lazy-result.js:258:26)
+    at LazyResult.async (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/node_modules/postcss/lib/lazy-result.js:160:30)
+    at LazyResult.then (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/node_modules/postcss/lib/lazy-result.js:404:17)
+    at Object.<anonymous> (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[11].oneOf[12].use[2]!/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[11].oneOf[12].use[3]!/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/src/app/globals.css:1:7)
+    at /Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:28:915116
+    at Hook.eval [as call] (eval at create (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:13:28645), <anonymous>:7:1)
+    at Hook.CALL_DELEGATE [as _call] (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:13:25915)
+    at /Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:28:131228
+    at tryRunOrWebpackError (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:28:311517)
+    at __webpack_require_module__ (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:28:131195)
+    at __nested_webpack_require_153754__ (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:28:130634)
+    at /Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/webpack/bundle5.js:28:131487
+    at symbolIterator (/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/compiled/neo-async/async.js:1:14444)
+
+Generated code for /Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[11].oneOf[12].use[2]!/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[11].oneOf[12].use[3]!/Users/praveenchalla/Downloads/ai-log-analyzer/frontend/src/app/globals.css
+
+Import trace for requested module:
+./src/app/globals.css
+
+
+> Build failed because of webpack errors

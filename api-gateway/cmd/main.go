@@ -19,6 +19,7 @@ import (
 	"praveenchalla.local/ai-log-analyzer/internal/gateway/handlers"
 	"praveenchalla.local/ai-log-analyzer/internal/gateway/middleware"
 	"praveenchalla.local/ai-log-analyzer/internal/gateway/websocket"
+	"praveenchalla.local/ai-log-analyzer/internal/kafka"
 	"praveenchalla.local/ai-log-analyzer/internal/repository"
 	"praveenchalla.local/ai-log-analyzer/pkg/config"
 	"praveenchalla.local/ai-log-analyzer/pkg/logger"
@@ -91,10 +92,17 @@ func main() {
 	defer aiClient.Close()
 	l.Info("gRPC Bridge established", "addr", cfg.Gateway.AIServiceGRPC)
 
-	// 6. Initialize WebSocket Manager (NewManager(logger))
-	wsManager := websocket.NewManager(l)
-	go wsManager.Run()
-	l.Info("WebSocket Subscription Manager initialized")
+	// 6. Initialize WebSocket Manager & Kafka Consumer Bridge
+	wsConsumer, err := kafka.NewConsumer(cfg.Kafka, cfg.Kafka.Topics.RawLogs, l)
+	if err != nil {
+		l.Error("Failed to initialize Kafka consumer for WebSockets", "error", err)
+	}
+
+	wsManager := websocket.NewManager(l, wsConsumer)
+	wsCtx, wsCancel := context.WithCancel(context.Background())
+	defer wsCancel()
+	go wsManager.Run(wsCtx)
+	l.Info("WebSocket Subscription Manager initialized with Kafka Bridge")
 
 	// 8. Setup Handlers
 	h := handlers.NewHandler(aiClient, rdb, wsManager, m, l, workforceRepo)
@@ -102,6 +110,7 @@ func main() {
 	// 8. Setup Gin Router
 	router := gin.Default()
 	router.Use(gin.Recovery())
+	router.Use(middleware.CORSMiddleware())
 
 	// Apply Redis Rate Limiting Middleware
 	router.Use(middleware.RateLimitMiddleware(rdb, l))
