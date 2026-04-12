@@ -22,6 +22,7 @@ import (
 	"praveenchalla.local/ai-log-analyzer/internal/gateway/middleware"
 	"praveenchalla.local/ai-log-analyzer/internal/gateway/websocket"
 	"praveenchalla.local/ai-log-analyzer/internal/kafka"
+	"praveenchalla.local/ai-log-analyzer/internal/models"
 	"praveenchalla.local/ai-log-analyzer/internal/repository"
 	"praveenchalla.local/ai-log-analyzer/pkg/config"
 	"praveenchalla.local/ai-log-analyzer/pkg/logger"
