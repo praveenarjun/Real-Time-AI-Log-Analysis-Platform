@@ -16,7 +16,7 @@ import {
   ShieldCheck
 } from "lucide-react";
 
-export default function Sidebar() {
+export default function Sidebar({ onToggleAlerts, unreadCount = 0 }) {
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
 
@@ -82,9 +82,14 @@ export default function Sidebar() {
       </nav>
 
       <div className="flex flex-col gap-10 mt-auto px-4 pb-4">
-        <button className="relative group flex items-center justify-center p-3 rounded-xl hover:bg-white/5 transition-all text-text-secondary hover:text-white border border-transparent hover:border-white/10">
+        <button 
+          onClick={onToggleAlerts}
+          className="relative group flex items-center justify-center p-3 rounded-xl hover:bg-white/5 transition-all text-text-secondary hover:text-white border border-transparent hover:border-white/10"
+        >
           <Bell className="w-5 h-5" />
-          <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-accent-fuchsia rounded-full border border-bg-primary shadow-[0_0_10px_#d946ef]"></span>
+          {unreadCount > 0 && (
+            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-accent-fuchsia rounded-full border border-bg-primary shadow-[0_0_10px_#d946ef]"></span>
+          )}
         </button>
         
         <button className="flex items-center justify-center p-3 rounded-xl hover:bg-white/5 transition-all text-text-secondary hover:text-white border border-transparent hover:border-white/10">
