@@ -86,7 +86,7 @@ make up    # Launch the Forensic Mesh
 Verify the AI's forensic capabilities by injecting a complex failure scenario:
 ```bash
 # Inject an OAuth Token Poisoning cascade
-python log-simulator/simulator.py --scenario=silent_poison
+python3 log-simulator/simulator.py --scenario=silent_poison
 ```
 
 ---

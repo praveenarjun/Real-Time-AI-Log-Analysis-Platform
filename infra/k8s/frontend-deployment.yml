@@ -18,6 +18,11 @@ spec:
       containers:
       - name: ui
         image: acrlogpraveen99.azurecr.io/react-ui:latest
+        env:
+        - name: NEXT_PUBLIC_API_URL
+          value: "http://20.200.255.31"
+        - name: NEXT_PUBLIC_WS_URL
+          value: "ws://20.200.255.31/api/v1/ws/stream"
         resources:
           requests:
             cpu: "100m"
@@ -34,6 +39,7 @@ metadata:
   name: frontend
   namespace: forensic-platform
 spec:
+  type: LoadBalancer
   selector:
     app: frontend
   ports:
