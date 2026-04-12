@@ -12,8 +12,8 @@ spec:
     metadata:
       labels:
         app: go-gateway
-        annotations:
-          ad.datadoghq.com/gateway.logs: '[{"source": "go", "service": "api-gateway"}]'
+      annotations:
+        ad.datadoghq.com/gateway.logs: '[{"source": "go", "service": "api-gateway"}]'
     spec:
       volumes:
       - name: kafka-certs-vol
