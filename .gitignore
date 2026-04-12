@@ -79,3 +79,7 @@ frontend/build/
 frontend/dist/
 
 infra/k8s/secrets.yml
+
+# Build artifacts
+.next/
+frontend/.next/

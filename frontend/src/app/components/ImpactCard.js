@@ -10,7 +10,8 @@ import {
   Zap,
   Clock,
   User,
-  Activity
+  Activity,
+  ArrowRight
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -25,106 +26,111 @@ export default function ImpactCard({ report, anomaly }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+      initial={{ opacity: 0, scale: 0.98, y: 15 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      className={`relative overflow-hidden group rounded-3xl border border-accent-${severityColor}/20 bg-gradient-to-br from-accent-${severityColor}/10 to-transparent backdrop-blur-3xl p-8`}
+      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+      className={`relative overflow-hidden group rounded-[2.5rem] border border-white/5 bg-gradient-to-br from-bg-secondary to-transparent backdrop-blur-3xl p-10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)]`}
     >
-      {/* Glossy Background Accents */}
-      <div className={`absolute -right-20 -top-20 w-64 h-64 bg-accent-${severityColor}/20 rounded-full blur-[100px] group-hover:bg-accent-${severityColor}/30 transition-all duration-700`} />
+      {/* Background Grid Accent */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(var(--accent-cyan) 1px, transparent 0)', backgroundSize: '20px 20px' }} />
       
-      <div className="relative z-10 flex flex-col gap-6">
+      {/* Subtle Glow */}
+      <div className={`absolute -right-32 -top-32 w-80 h-80 bg-accent-${severityColor}/10 rounded-full blur-[120px] pointer-events-none group-hover:bg-accent-${severityColor}/20 transition-all duration-1000`} />
+      
+      <div className="relative z-10 flex flex-col gap-10">
         {/* Header: Title & Identity */}
-        <div className="flex items-start justify-between gap-6">
-          <div className="space-y-1">
-            <div className={`text-[10px] font-black text-accent-${severityColor} uppercase tracking-[0.3em]`}>
-              Forensic Intelligence Report
+        <div className="flex items-start justify-between gap-8">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+                <div className={`px-2.5 py-1 rounded-md bg-accent-${severityColor}/10 border border-accent-${severityColor}/20 text-[10px] font-black text-accent-${severityColor} uppercase tracking-[0.3em]`}>
+                    FORENSIC_SIG_INT
+                </div>
+                <div className="mono-data text-[10px] text-white/20 uppercase tracking-[0.2em] font-black">
+                    V: 2.1-ENGINE
+                </div>
             </div>
-            <h2 className="text-2xl font-black text-white tracking-tight uppercase leading-none">
-              {report?.title || anomaly?.type || "System Incident Detection"}
+            <h2 className="text-4xl font-black text-white tracking-tighter uppercase leading-none max-w-2xl">
+              {report?.title || anomaly?.type || "Anomaly Signal Detected"}
             </h2>
-            <div className="flex items-center gap-3 text-white/40 text-[10px] uppercase font-bold tracking-widest mt-3">
-              <span className="bg-white/5 px-2 py-0.5 rounded border border-white/10 uppercase">ID: {report?.id || anomaly?.id || "INC-AUTO"}</span>
-              <span className="text-white/20">|</span>
-              <span className={`text-accent-${severityColor} flex items-center gap-1`}>
-                <Activity className="w-3 h-3" />
-                Verified by AI-Nano
-              </span>
+            <div className="flex items-center gap-4 mt-6">
+                <span className="mono-data text-[10px] bg-white/5 px-3 py-1 rounded-full border border-white/10 text-white/60 font-black uppercase tracking-widest">INCIDENT_HASH: {report?.id?.substring(0,8) || anomaly?.id?.substring(0,8) || "0xDEADBEEF"}</span>
+                <span className={`flex items-center gap-2 mono-data text-[10px] font-black uppercase tracking-[0.15em] text-accent-${severityColor}`}>
+                    <Activity className="w-4 h-4" />
+                    Verdict: {severity}
+                </span>
             </div>
           </div>
-          <div className={`p-4 rounded-2xl bg-accent-${severityColor}/20 border border-accent-${severityColor}/20`}>
-             {severity === "CRITICAL" ? <Flame className="w-8 h-8 text-status-error" /> : 
-              severity === "HIGH" ? <ShieldAlert className="w-8 h-8 text-accent-fuchsia" /> : 
-              <Zap className="w-8 h-8 text-accent-cyan" />}
+          <div className={`w-20 h-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center p-5 shadow-2xl relative overflow-hidden group-hover:border-accent-${severityColor}/40 transition-all duration-500`}>
+             <div className={`absolute inset-0 bg-gradient-to-br from-accent-${severityColor}/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
+             {severity === "CRITICAL" ? <Flame className="w-10 h-10 text-status-error animate-pulse" /> : 
+              severity === "HIGH" ? <ShieldAlert className="w-10 h-10 text-accent-fuchsia" /> : 
+              <Zap className="w-10 h-10 text-accent-cyan" />}
           </div>
         </div>
 
-        {/* Executive Impact Verdict */}
-        <div className="bg-black/20 rounded-2xl p-6 border border-white/5 space-y-4 shadow-inner">
-           <div className="flex items-center gap-2 text-white/60 text-[10px] font-black uppercase tracking-widest border-b border-white/5 pb-3">
-              <Terminal className="w-4 h-4 text-accent-cyan" />
-              Intelligence Summary
-           </div>
-           <p className="text-sm font-medium text-white/90 leading-relaxed italic">
-             "{report?.executive_summary || anomaly?.description || "Analyzing failure progression patterns and system health trajectories..."}"
+        {/* Executive Summary with Technical Flair */}
+        <div className="relative">
+           <div className="absolute -left-4 top-0 bottom-0 w-1 bg-accent-cyan/20 rounded-full" />
+           <p className="text-lg font-medium text-white/90 leading-relaxed pl-6 italic max-w-3xl">
+             "{report?.executive_summary || anomaly?.description || "Processing distributed telemetry streams for pattern correlation and executive verdict..."}"
            </p>
         </div>
 
-        {/* RCA & Next Steps Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Forensic Analysis Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
            {/* RCA Section */}
-           <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">
+           <div className="space-y-6">
+              <div className="flex items-center gap-3 text-[11px] font-black text-white/30 uppercase tracking-[0.3em]">
                  <AlertTriangle className="w-4 h-4 text-status-warn" />
-                 Root Cause Analysis
+                 Forensic Root Cause
               </div>
-              <div className="rounded-2xl bg-white/5 p-5 border border-white/5 hover:border-white/10 transition-all font-medium text-xs leading-relaxed text-text-secondary">
-                {report?.root_cause_analysis || anomaly?.root_cause || "Analyzing cascading failure traces and microservice heartbeats to isolate origin..."}
+              <div className="rounded-[2rem] bg-black/40 p-8 border border-white/5 hover:border-white/10 transition-all font-medium text-sm leading-relaxed text-text-secondary shadow-inner">
+                {report?.root_cause_analysis || anomaly?.root_cause || "Analyzing microservice dependency tree and historical baselines to localize failure origin..."}
               </div>
            </div>
 
-           {/* Next Steps Section */}
-           <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">
+           {/* Mitigation Strategy */}
+           <div className="space-y-6">
+              <div className="flex items-center gap-3 text-[11px] font-black text-white/30 uppercase tracking-[0.3em]">
                  <CheckCircle2 className="w-4 h-4 text-status-success" />
-                 Actionable Next Steps
+                 Mitigation Directives
               </div>
-              <div className="space-y-3">
+              <div className="space-y-4">
                  {(report?.action_items || [
-                   { task: "Identify origin in log stream", priority: "HIGH" },
-                   { task: "Prepare roll-back strategy", priority: "MEDIUM" }
+                   { task: "Execute failover to secondary node", priority: "HIGH" },
+                   { task: "Initialize stack trace audit", priority: "MEDIUM" }
                  ]).map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 group/item cursor-default hover:bg-white/10 transition-all">
-                       <div className={`w-1.5 h-1.5 rounded-full ${item.priority === 'CRITICAL' || item.priority === 'HIGH' ? 'bg-status-error' : 'bg-status-success'}`} />
-                       <div className="flex-1 text-[11px] font-bold text-white group-hover/item:translate-x-1 transition-transform uppercase tracking-tight">{item.task}</div>
-                       <div className="text-[9px] font-black text-white/20 uppercase group-hover/item:text-white/40 transition-all">{item.assignee_role || "DEV"}</div>
+                    <div key={idx} className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 group/item cursor-pointer hover:bg-white/10 transition-all">
+                       <div className={`w-2 h-2 rounded-full ${item.priority === 'CRITICAL' || item.priority === 'HIGH' ? 'bg-status-error shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-status-success shadow-[0_0_10px_rgba(16,185,129,0.5)]'}`} />
+                       <div className="flex-1 text-xs font-black text-white group-hover/item:translate-x-1 transition-transform uppercase tracking-tight">{item.task}</div>
+                       <ArrowRight className="w-4 h-4 text-white/10 group-hover/item:text-white/40 group-hover/item:translate-x-1 transition-all" />
                     </div>
                  ))}
               </div>
            </div>
         </div>
 
-        {/* System Prognosis Table */}
-        <div className="rounded-2xl border border-white/5 bg-white/5 overflow-hidden">
-           <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
-              <span className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-2">
-                 <Clock className="w-4 h-4 text-accent-cyan" />
-                 Failure Prognosis
-              </span>
-              <span className="text-[10px] font-black text-accent-fuchsia uppercase bg-accent-fuchsia/10 px-3 py-1 rounded-full border border-accent-fuchsia/20 tracking-tighter shadow-sm">
-                 Risk Score: {report?.risk_score || (anomaly?.confidence_score * 100) || 45}%
-              </span>
+        {/* Technical Prognosis Bar */}
+        <div className="rounded-[2rem] border border-white/5 bg-black/40 overflow-hidden shadow-inner flex flex-col lg:flex-row">
+           <div className="p-8 lg:p-10 lg:w-1/3 border-b lg:border-b-0 lg:border-r border-white/5 flex flex-col justify-center">
+              <div className="flex items-center gap-3 mb-4">
+                 <Clock className="w-5 h-5 text-accent-cyan" />
+                 <span className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em]">Forensic Signal</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                 <span className="text-4xl font-black text-white tracking-tighter tabular-nums">{report?.risk_score || 78}%</span>
+                 <span className="text-[10px] font-bold text-accent-fuchsia uppercase tracking-widest">Risk_Index</span>
+              </div>
            </div>
-           <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-white/5 border-t border-white/5">
+           <div className="grid grid-cols-2 lg:grid-cols-3 flex-1">
               {[
-                { label: "Stability Index", value: "92%", color: "emerald", icon: Activity },
-                { label: "Time to OOM", value: "45 Mins", color: "rose", icon: Clock },
-                { label: "Affected Nodes", value: report?.affected_services?.length || 2, color: "blue", icon: Terminal },
-                { label: "Dev Assignee", value: "Forensic Team", color: "fuchsia", icon: User },
+                { label: "Confidence", value: `${(anomaly?.confidence_score * 100).toFixed(0) || 94}%`, color: "cyan" },
+                { label: "Impact Radius", value: report?.affected_services?.length || 2, color: "blue", suffix: "Nodes" },
+                { label: "Assignee", value: "Forensic_Lead", color: "fuchsia" },
               ].map((item, idx) => (
-                <div key={idx} className="p-4 space-y-1 text-center group cursor-default">
-                  <div className="text-[9px] font-bold text-white/30 uppercase tracking-[0.15em] group-hover:text-white/50 transition-all mb-1">{item.label}</div>
-                  <div className={`text-sm font-black text-accent-${item.color} uppercase tracking-tighter`}>{item.value}</div>
+                <div key={idx} className="p-8 space-y-2 group cursor-default border-l border-white/5 first:border-l-0">
+                  <div className="text-[9px] font-bold text-white/20 uppercase tracking-[0.3em] group-hover:text-white/40 transition-all">{item.label}</div>
+                  <div className={`text-lg font-black text-accent-${item.color} uppercase tracking-tighter`}>{item.value} {item.suffix && <span className="opacity-40">{item.suffix}</span>}</div>
                 </div>
               ))}
            </div>

@@ -11,17 +11,20 @@ import {
   HardDrive, 
   ArrowUpRight, 
   Zap,
-  Radio
+  Radio,
+  BarChart3,
+  Dna,
+  Binary
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
-// Mock Data as fallback for "Looks Like Pro" requirement
+// Mock Data for Professional "Wowed" Effect
 const MOCK_STATS = {
-  logsPerSec: 1420,
-  anomalies24h: 4,
-  systemHealth: 98.2,
-  storageUtil: 82
+  logsPerSec: 1842,
+  anomalies24h: 3,
+  systemHealth: 99.8,
+  storageUtil: 64
 };
 
 const MOCK_CHART_DATA = [
@@ -45,7 +48,7 @@ export default function Dashboard() {
     setMounted(true);
   }, []);
 
-  // 1. WebSocket Real-Time Strategy with Sonic-Shield Reconnection
+  // WebSocket Real-Time Strategy
   useEffect(() => {
     let socket;
     let reconnectTimer;
@@ -126,35 +129,34 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-12 pb-20">
       {/* Header Section: Forensic Command Context */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-white/5 pb-10">
-        <div className="space-y-4">
-          <div className="flex items-center gap-4">
-             <div className="p-3 rounded-2xl bg-accent-cyan/10 border border-accent-cyan/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]">
-                <Zap className="w-6 h-6 text-accent-cyan" />
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-10 border-b border-white/5 pb-10">
+        <div className="space-y-6">
+          <div className="flex items-center gap-6">
+             <div className="w-16 h-16 rounded-[2rem] bg-accent-cyan/10 border border-accent-cyan/20 shadow-[0_0_30px_rgba(34,211,238,0.1)] flex items-center justify-center">
+                <Dna className="w-8 h-8 text-accent-cyan animate-pulse" />
              </div>
              <div>
-                <h1 className="text-5xl font-black tracking-tighter text-white leading-none">Command Center</h1>
-                <div className="flex items-center gap-2 mt-2">
-                   <span className="mono-data text-[10px] text-accent-cyan uppercase tracking-widest bg-accent-cyan/10 px-2 py-0.5 rounded border border-accent-cyan/20">Node: Azure-Northe-01</span>
-                   <span className="mono-data text-[10px] text-white/20 uppercase tracking-widest">|</span>
-                   <span className="mono-data text-[10px] text-text-secondary uppercase tracking-widest">V: 1.2.4-stable</span>
+                <h1 className="text-6xl font-black tracking-tighter text-white leading-none">Command Center</h1>
+                <div className="flex items-center gap-3 mt-3">
+                   <span className="mono-data text-[10px] text-accent-cyan uppercase tracking-[0.2em] bg-accent-cyan/10 px-3 py-0.5 rounded border border-accent-cyan/20 font-black">Cluster: AZURE-PRIMARY-01</span>
+                   <span className="mono-data text-[10px] text-white/10 uppercase tracking-widest font-black">|</span>
+                   <span className="mono-data text-[10px] text-text-secondary uppercase tracking-[0.2em] font-black">Kernel_V: 1.2.4-stable</span>
                 </div>
              </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-6 bg-white/5 border border-white/5 p-3 rounded-[1.5rem] backdrop-blur-2xl">
-            <div className="flex flex-col items-end px-4 border-r border-white/10">
-                <span className="mono-data text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Tunnel Status</span>
+        <div className="flex items-center gap-8 bg-white/5 border border-white/10 p-4 rounded-[2rem] backdrop-blur-3xl shadow-2xl">
+            <div className="flex flex-col items-end px-6 border-r border-white/10">
+                <span className="mono-data text-[10px] font-black text-white/30 uppercase tracking-[0.25em] mb-1.5">Sonic Tunnel Status</span>
                 <span className={`mono-data text-xs font-black uppercase tracking-tighter ${wsStatus === 'connected' ? 'text-status-success' : 'text-status-error'}`}>
-                    {wsStatus === 'connected' ? 'Sonic_Active' : 'Tunnel_Offline'}
+                    {wsStatus === 'connected' ? 'SECURE_ACTIVE' : 'TUNNEL_SEVERED'}
                 </span>
             </div>
-            <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden group">
-                <div className={`absolute inset-0 bg-gradient-to-tr ${wsStatus === 'connected' ? 'from-status-success/20' : 'from-status-error/20'} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-                <Radio className={`w-8 h-8 ${wsStatus === 'connected' ? 'text-status-success animate-pulse' : 'text-text-secondary'}`} />
+            <div className={`w-14 h-14 rounded-2xl ${wsStatus === 'connected' ? 'bg-status-success/10 border-status-success/30' : 'bg-status-error/10 border-status-error/30'} border flex items-center justify-center relative shadow-lg`}>
+                <Radio className={`w-8 h-8 ${wsStatus === 'connected' ? 'text-status-success animate-pulse' : 'text-status-error'}`} />
             </div>
         </div>
       </div>
@@ -164,17 +166,17 @@ export default function Dashboard() {
          {(activeReport || activeAnomaly) ? (
             <ImpactCard report={activeReport} anomaly={activeAnomaly} />
          ) : (
-            <GlassCard className="bg-gradient-to-br from-bg-secondary to-transparent border-white/5 py-14">
-               <div className="flex flex-col items-center gap-6 text-center">
-                  <div className="p-5 rounded-3xl bg-white/5 border border-white/5 shadow-inner">
-                     <Activity className="w-10 h-10 text-white/20 animate-pulse" />
+            <GlassCard className="bg-gradient-to-br from-bg-secondary to-transparent border-white/5 py-16 group">
+               <div className="flex flex-col items-center gap-8 text-center">
+                  <div className="p-6 rounded-[2.5rem] bg-white/5 border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-700">
+                     <Binary className="w-12 h-12 text-white/10 animate-pulse" />
                   </div>
-                  <div className="space-y-2">
-                    <h3 className="text-xl font-black text-white tracking-widest uppercase">Initializing Intelligence Mesh</h3>
-                    <p className="max-w-xl text-xs text-text-secondary leading-relaxed font-medium mono-data opacity-60 uppercase tracking-widest">
-                      SYS://BOOT.LOG - Listening on Kafka raw-logs... <br/>
-                      Awaiting forensic signals for executive verdict. <br/>
-                      <span className="text-status-success">System stability verified at 99.4%</span>
+                  <div className="space-y-4">
+                    <h3 className="text-2xl font-black text-white tracking-[0.4em] uppercase">Initializing Predictive Mesh</h3>
+                    <p className="max-w-2xl text-[11px] text-text-secondary leading-relaxed font-black mono-data opacity-50 uppercase tracking-[0.25em]">
+                      Awaiting forensic signals from node clusters... <br/>
+                      Correlating distributed STDOUT streams for executive patterns. <br/>
+                      <span className="text-accent-cyan mt-2 block">AI Integrity: VERIFIED (99.98% Confidence)</span>
                     </p>
                   </div>
                </div>
@@ -186,22 +188,22 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {[
           { label: "Throughput", value: stats.logsPerSec, icon: Activity, color: "cyan", suffix: "msg/s" },
-          { label: "Anomalies", value: stats.anomalies24h, icon: ShieldAlert, color: "fuchsia", suffix: "detected" },
-          { label: "Integrity", value: `${stats.systemHealth}%`, icon: Cpu, color: "blue", suffix: "healthy" },
-          { label: "Allocation", value: `${stats.storageUtil}%`, icon: HardDrive, color: "emerald", suffix: "capacity" },
+          { label: "AI Findings", value: stats.anomalies24h, icon: ShieldAlert, color: "fuchsia", suffix: "anomalies" },
+          { label: "System Integrity", value: `${stats.systemHealth}%`, icon: Cpu, color: "blue", suffix: "uptime" },
+          { label: "Allocated Cap", value: `${stats.storageUtil}%`, icon: HardDrive, color: "emerald", suffix: "disk" },
         ].map((item, idx) => (
-          <GlassCard key={idx} delay={idx * 0.1} className={`hover:border-accent-${item.color}/40 p-10 group`}>
-            <div className="flex items-center justify-between mb-8">
-              <div className={`p-4 rounded-2xl bg-accent-${item.color}/10 text-accent-${item.color} border border-accent-${item.color}/20 group-hover:scale-110 shadow-lg transition-all duration-500`}>
+          <GlassCard key={idx} delay={idx * 0.15} className={`hover:border-accent-${item.color}/40 p-10 group`}>
+            <div className="flex items-center justify-between mb-10">
+              <div className={`p-4 rounded-2xl bg-accent-${item.color}/10 text-accent-${item.color} border border-accent-${item.color}/20 group-hover:scale-110 shadow-2xl transition-all duration-700`}>
                 <item.icon className="w-7 h-7" />
               </div>
-              <div className="mono-data text-[10px] font-black text-white/20 uppercase tracking-[0.2em] group-hover:text-white/40 transition-colors">Tel_Sync</div>
+              <div className="mono-data text-[10px] font-black text-white/10 uppercase tracking-[0.2em]">Tele_RX</div>
             </div>
-            <div className="flex items-baseline gap-2 mb-2">
+            <div className="flex items-baseline gap-2 mb-3">
                <div className="mono-data text-5xl font-black text-white tracking-tighter tabular-nums">{item.value}</div>
-               <div className={`mono-data text-[10px] font-bold text-accent-${item.color} uppercase opacity-60 tracking-widest`}>{item.suffix}</div>
+               <div className={`mono-data text-[10px] font-black text-accent-${item.color} uppercase opacity-40 tracking-[0.2em]`}>{item.suffix}</div>
             </div>
-            <div className="mono-data text-[10px] text-text-secondary font-black tracking-[0.3em] uppercase border-t border-white/5 pt-4">{item.label}</div>
+            <div className="mono-data text-[11px] text-text-secondary font-black tracking-[0.3em] uppercase border-t border-white/5 pt-5">{item.label}</div>
           </GlassCard>
         ))}
       </div>
@@ -209,33 +211,34 @@ export default function Dashboard() {
       {/* Main Dashboard Layout */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
         
-        {/* Real-time Feed */}
+        {/* Real-time Feed Column */}
         <div className="xl:col-span-2 space-y-10">
-           <GlassCard borderClassName="border-accent-cyan/20" title="Telemetry Ingestion Bridge" subtitle="Raw STDOUT stream from distributed cloud nodes">
-              <div className="rounded-3xl border border-white/5 bg-black/40 p-1 shadow-inner relative group">
+           <GlassCard borderClassName="border-accent-cyan/20" title="Distributed Ingestion Mesh" subtitle="Synchronized STDOUT stream across AZURE-PRIMARY cluster">
+              <div className="rounded-[2.5rem] border border-white/5 bg-black/60 p-1 shadow-inner relative group overflow-hidden">
                  <div className="absolute inset-0 bg-gradient-to-b from-accent-cyan/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                  <LiveLogStream logs={logs} status={wsStatus} />
               </div>
            </GlassCard>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <GlassCard title="Failure Trajectory" subtitle="Sentiment and density over 24h cycle">
-                  <div className="h-72 w-full mt-4">
+              <GlassCard title="Failure Trajectory" subtitle="Forensic sentiment and load density correlation">
+                  <div className="h-80 w-full mt-6">
                     {mounted && (
                       <ResponsiveContainer width="100%" height="100%">
                           <AreaChart data={chartData}>
                              <defs>
                                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                   <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.2}/>
+                                   <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.3}/>
                                    <stop offset="95%" stopColor="#22d3ee" stopOpacity={0}/>
                                 </linearGradient>
                              </defs>
+                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.03)" />
                              <Area type="monotone" dataKey="value" stroke="#22d3ee" fillOpacity={1} fill="url(#colorValue)" strokeWidth={4} />
                              <XAxis dataKey="time" hide />
                              <YAxis hide domain={[0, 100]} />
                              <Tooltip 
-                                  contentStyle={{ backgroundColor: '#020617', border: '0.5px solid rgba(255,255,255,0.1)', borderRadius: '24px', backdropFilter: 'blur(12px)' }}
-                                  itemStyle={{ color: '#22d3ee', fontWeight: '900', fontSize: '12px' }}
+                                  contentStyle={{ backgroundColor: '#020617', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', backdropFilter: 'blur(12px)', padding: '12px' }}
+                                  itemStyle={{ color: '#22d3ee', fontWeight: '900', fontSize: '12px', textTransform: 'uppercase' }}
                                   labelStyle={{ display: 'none' }}
                               />
                           </AreaChart>
@@ -244,65 +247,68 @@ export default function Dashboard() {
                  </div>
               </GlassCard>
 
-              <GlassCard title="Recent Findings" subtitle="Verified AI anomalies in last 24h">
-                 <div className="space-y-4 mt-4">
+              <GlassCard title="Recent AI Findings" subtitle="Predictive anomalies verified by forensic core">
+                 <div className="space-y-4 mt-6">
                     {[
-                      { id: 'AN-823', type: 'Error Spike', severity: 'High', service: 'AUTH-BRIDGE', time: '12m ago' },
-                      { id: 'AN-824', type: 'OOM Warning', severity: 'Medium', service: 'DATA-SINK', time: '44m ago' },
+                      { id: 'SIG-823', type: 'Spike Detected', severity: 'CRITICAL', service: 'AUTH-MOD', time: '12m ago' },
+                      { id: 'SIG-824', type: 'Pattern Drift', severity: 'MEDIUM', service: 'DATA-SINK', time: '44m ago' },
+                      { id: 'SIG-825', type: 'Node Stress', severity: 'HIGH', service: 'KAFKA-RX', time: '1h 12m ago' },
                     ].map((anomaly, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-5 rounded-[1.5rem] bg-white/5 border border-white/5 hover:border-white/10 transition-all group cursor-pointer relative overflow-hidden shadow-sm">
-                         <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${anomaly.severity === 'High' ? 'bg-status-error shadow-[0_0_10px_var(--status-error)]' : 'bg-status-warn shadow-[0_0_10px_var(--status-warn)]'}`} />
-                         <div className="space-y-1">
-                            <h4 className="mono-data text-[11px] font-black text-white tracking-widest uppercase">{anomaly.type}</h4>
-                            <div className="flex items-center gap-2">
-                               <span className="mono-data text-[9px] text-text-secondary uppercase font-bold tracking-wider">{anomaly.service}</span>
+                      <div key={idx} className="flex items-center justify-between p-5 rounded-[2rem] bg-white/5 border border-white/5 hover:border-white/10 transition-all group cursor-pointer relative overflow-hidden shadow-sm">
+                         <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${anomaly.severity === 'CRITICAL' ? 'bg-status-error' : anomaly.severity === 'HIGH' ? 'bg-accent-fuchsia' : 'bg-status-warn'}`} />
+                         <div className="space-y-1.5 pl-2">
+                            <h4 className="mono-data text-[11px] font-black text-white tracking-[0.2em] uppercase">{anomaly.type}</h4>
+                            <div className="flex items-center gap-3">
+                               <span className="mono-data text-[9px] text-text-secondary uppercase font-bold tracking-widest">{anomaly.service}</span>
                                <span className="text-white/10 uppercase font-black text-[9px]">|</span>
-                               <span className="mono-data text-[9px] text-white/30 uppercase font-bold tracking-wider">{anomaly.time}</span>
+                               <span className="mono-data text-[9px] text-white/20 uppercase font-black tracking-widest">{anomaly.time}</span>
                             </div>
                          </div>
-                         <ArrowUpRight className="w-5 h-5 text-text-secondary group-hover:text-white group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
+                         <div className="p-2 rounded-xl border border-white/5 group-hover:border-white/20 transition-all">
+                            <ArrowUpRight className="w-5 h-5 text-text-secondary group-hover:text-white transition-all" />
+                         </div>
                       </div>
                     ))}
-                    <button className="w-full mt-4 py-4 border border-white/5 rounded-[1.5rem] mono-data text-[10px] font-black text-white/30 hover:text-white hover:bg-white/5 transition-all tracking-[0.3em] uppercase">
-                        Access Full Forensic Audit
+                    <button className="w-full mt-6 py-5 border border-white/10 rounded-[2rem] mono-data text-[10px] font-black text-white/30 hover:text-white hover:bg-white/5 hover:border-white/20 transition-all tracking-[0.4em] uppercase shadow-lg">
+                        ACCESS ARCHIVAL FORENSIC AUDIT
                     </button>
                  </div>
               </GlassCard>
            </div>
         </div>
 
-        {/* Sidebar Insights */}
+        {/* Sidebar Insights Column */}
         <div className="space-y-10">
            <GlassCard className="bg-gradient-to-br from-accent-fuchsia/5 to-transparent border-accent-fuchsia/20">
-              <div className="flex items-center gap-4 mb-6">
-                 <div className="p-3 rounded-2xl bg-accent-fuchsia/10 border border-accent-fuchsia/20">
-                    <Zap className="w-5 h-5 text-accent-fuchsia" />
+              <div className="flex items-center gap-5 mb-8">
+                 <div className="p-4 rounded-2xl bg-accent-fuchsia/10 border border-accent-fuchsia/20 shadow-lg">
+                    <Zap className="w-6 h-6 text-accent-fuchsia" />
                  </div>
-                 <h3 className="text-sm font-black text-white tracking-widest uppercase">Forensic Prognosis</h3>
+                 <h3 className="text-sm font-black text-white tracking-[0.3em] uppercase">Executive Verdict</h3>
               </div>
-              <p className="mono-data text-[11px] text-text-secondary leading-relaxed font-medium">
-                AI node <span className="text-accent-fuchsia font-black underline">NANO-FORENSIC-01</span> predicts <span className="text-white font-black underline">92% stability</span> for the next 4h cycle. <br/><br/>
-                <span className="text-status-success font-black border-b border-status-success/20">No critical bottlenecks identified in Kafka stream raw-logs.</span>
+              <p className="mono-data text-[11px] text-text-secondary leading-relaxed font-black uppercase tracking-widest opacity-80">
+                Predictive Node <span className="text-accent-fuchsia font-black underline">AI-VERDICT-01</span> calculates <span className="text-white font-black underline">91.4% stability</span> for current cycle. <br/><br/>
+                <span className="text-status-success font-black border-l-2 border-status-success pl-4 ml-1">Zero critical bottlenecks detected in ingestion mesh.</span>
               </p>
            </GlassCard>
 
            <GlassCard title="Infrastructure Pulse">
-              <div className="space-y-8 mt-6">
+              <div className="space-y-10 mt-8 px-2">
                  {[
-                   { label: "Internal Node Cluster", status: "Active", progress: 92, color: "cyan" },
-                   { label: "AI Analysis Mesh", status: "Active", progress: 78, color: "fuchsia" },
-                   { label: "Telemetry Sink Bridge", status: "Online", progress: 45, color: "blue" },
+                   { label: "Core Node Cluster", status: "Active", progress: 94, color: "cyan" },
+                   { label: "AI Analysis Mesh", status: "Active", progress: 82, color: "fuchsia" },
+                   { label: "Telemetry Sink", status: "Online", progress: 48, color: "blue" },
                  ].map((node, idx) => (
-                    <div key={idx} className="space-y-3 p-1">
-                       <div className="flex justify-between items-center mono-data text-[10px] font-black tracking-widest uppercase">
+                    <div key={idx} className="space-y-4">
+                       <div className="flex justify-between items-center mono-data text-[10px] font-black tracking-[0.3em] uppercase">
                           <span className="text-white/40">{node.label}</span>
-                          <span className={`text-accent-${node.color} opacity-80 shadow-sm`}>{node.status}</span>
+                          <span className={`text-accent-${node.color} opacity-90`}>{node.status}</span>
                        </div>
-                       <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden relative shadow-inner">
+                       <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden relative shadow-inner">
                           <motion.div 
                             initial={{ width: 0 }}
                             animate={{ width: `${node.progress}%` }}
-                            transition={{ duration: 1.5, ease: "easeOut" }}
+                            transition={{ duration: 2, ease: "circOut" }}
                             className={`h-full bg-gradient-to-r from-accent-${node.color} to-white/20 rounded-full shadow-[0_0_15px_var(--accent-${node.color})]`} 
                           />
                        </div>
@@ -310,8 +316,27 @@ export default function Dashboard() {
                  ))}
               </div>
            </GlassCard>
+
+           <GlassCard className="bg-gradient-to-br from-accent-blue/10 to-transparent border-accent-blue/20">
+              <div className="flex items-center gap-5 mb-6">
+                 <div className="p-4 rounded-xl bg-accent-blue/10 border border-accent-blue/20 shadow-lg">
+                    <BarChart3 className="w-6 h-6 text-accent-blue" />
+                 </div>
+                 <h3 className="text-[10px] font-black text-white tracking-[0.3em] uppercase">Resource Saturation</h3>
+              </div>
+              <div className="flex items-center gap-4">
+                 <div className="flex-1 flex flex-col gap-1">
+                    <span className="mono-data text-[24px] font-black text-white tracking-tighter tabular-nums">1.42 GB</span>
+                    <span className="mono-data text-[9px] text-white/20 uppercase tracking-widest font-black">Memory_Heap_Usage</span>
+                 </div>
+                 <div className="w-16 h-16 rounded-full border-4 border-accent-blue/20 border-t-accent-blue p-1">
+                    <div className="w-full h-full rounded-full bg-accent-blue/10 flex items-center justify-center text-[10px] font-black text-accent-blue">74%</div>
+                 </div>
+              </div>
+           </GlassCard>
         </div>
 
+      </div>
     </div>
   );
 }
