@@ -77,13 +77,13 @@ def send_batch(logs):
         return False
 
 def main():
+    global LOG_RATE
     import argparse
     parser = argparse.ArgumentParser(description="AI Log Simulation Engine")
     parser.add_argument("--scenario", type=str, help="Specific anomaly scenario to trigger immediately")
     parser.add_argument("--rate", type=float, default=LOG_RATE, help="Logs per second")
     args = parser.parse_args()
 
-    global LOG_RATE
     LOG_RATE = args.rate
 
     print(f"{Fore.CYAN}=========================================={Style.RESET_ALL}")
