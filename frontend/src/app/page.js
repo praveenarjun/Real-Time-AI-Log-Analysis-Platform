@@ -312,10 +312,6 @@ export default function Dashboard() {
            </GlassCard>
         </div>
 
-      </div>
-    </div>
-
-      </div>
     </div>
   );
 }
