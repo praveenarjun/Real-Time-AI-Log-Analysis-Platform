@@ -1,7 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Ensuring the dashboard is treated as a dynamic app
-  output: 'standalone',
+  // Enabling Static Export for Cloudflare Pages compatibility
+  output: 'export',
+  // Disabling image optimization for static export
+  images: {
+    unoptimized: true,
+  },
   // Improving build stability for real-time components
   eslint: {
     ignoreDuringBuilds: true,

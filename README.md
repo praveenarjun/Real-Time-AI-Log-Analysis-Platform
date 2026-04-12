@@ -124,7 +124,7 @@ To optimize costs and performance, we recommend deploying the Frontend to **Clou
 - **Project Name**: `ai-forensic-dashboard`
 - **Framework Preset**: `Next.js`
 - **Build Command**: `npm run build`
-- **Build Output Directory**: `.next`
+- **Build Output Directory**: `out`
 - **Root Directory**: `frontend`
 
 ### 3. Environment Variables (CRITICAL)
