@@ -12,6 +12,7 @@ database:
 kafka:
   brokers:
     - "kafka:29092"
+  tls: true
 
 redis:
   url: "redis://redis:6379"
