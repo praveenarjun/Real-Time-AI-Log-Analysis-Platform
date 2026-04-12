@@ -9,24 +9,24 @@ module.exports = {
     extend: {
       colors: {
         bg: {
-          primary: "#0f172a",
-          secondary: "#020617",
+          primary: "var(--bg-primary)",
+          secondary: "var(--bg-secondary)",
         },
         accent: {
-          cyan: "#06b6d4",
-          fuchsia: "#d946ef",
-          blue: "#3b82f6",
-          emerald: "#10b981",
+          cyan: "var(--accent-cyan)",
+          fuchsia: "var(--accent-fuchsia)",
+          blue: "var(--accent-blue)",
+          emerald: "var(--accent-emerald)",
         },
         status: {
-          info: "#0ea5e9",
-          warn: "#f59e0b",
-          error: "#ef4444",
-          success: "#10b981",
+          info: "var(--status-info)",
+          warn: "var(--status-warn)",
+          error: "var(--status-error)",
+          success: "var(--status-success)",
         },
         text: {
-          primary: "#f8fafc",
-          secondary: "#94a3b8",
+          primary: "var(--text-primary)",
+          secondary: "var(--text-secondary)",
         }
       },
       backgroundImage: {
