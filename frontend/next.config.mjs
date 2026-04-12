@@ -15,8 +15,8 @@ const nextConfig = {
   },
   // Setting defaults for cloud connectivity (SECURE HTTPS/WSS)
   env: {
-    NEXT_PUBLIC_API_URL: 'https://back.YOUR_DOMAIN', 
-    NEXT_PUBLIC_WS_URL: 'wss://back.YOUR_DOMAIN/api/v1/ws/stream',
+    NEXT_PUBLIC_API_URL: 'https://back.praveen-challa.tech', 
+    NEXT_PUBLIC_WS_URL: 'wss://back.praveen-challa.tech/api/v1/ws/stream',
   }
 };
 
