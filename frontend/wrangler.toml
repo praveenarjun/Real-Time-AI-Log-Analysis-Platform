@@ -1,0 +1,7 @@
+name = "ai-forensic-dashboard"
+compatibility_date = "2024-04-01"
+pages_build_output_dir = ".next"
+
+[env.production.vars]
+NEXT_PUBLIC_API_URL = "http://20.200.255.31"
+NEXT_PUBLIC_WS_URL = "ws://20.200.255.31/api/v1/ws/stream"

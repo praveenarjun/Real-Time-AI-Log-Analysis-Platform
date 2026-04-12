@@ -109,3 +109,27 @@ When the platform detects an irregularity, it doesn't just "log error"—it gene
 ```
 
 **Engineered for High-Stakes Reliability. Powered by AI Forensics.**
+
+---
+
+## 🌐 Cloudflare Deployment Guide (Frontend)
+To optimize costs and performance, we recommend deploying the Frontend to **Cloudflare Pages**.
+
+### 1. Connection Steps
+1.  Log in to the [Cloudflare Dashboard](https://dash.cloudflare.com/).
+2.  Navigate to **Workers & Pages** -> **Create application** -> **Pages** -> **Connect to Git**.
+3.  Select your `Real-Time-AI-Log-Analysis-Platform` repository.
+
+### 2. Build Configuration
+- **Project Name**: `ai-forensic-dashboard`
+- **Framework Preset**: `Next.js`
+- **Build Command**: `npm run build`
+- **Build Output Directory**: `.next`
+- **Root Directory**: `frontend`
+
+### 3. Environment Variables (CRITICAL)
+Add these in the Cloudflare Dashboard under **Settings** -> **Environment Variables**:
+- `NEXT_PUBLIC_API_URL`: `http://20.200.255.31`
+- `NEXT_PUBLIC_WS_URL`: `ws://20.200.255.31/api/v1/ws/stream`
+
+---

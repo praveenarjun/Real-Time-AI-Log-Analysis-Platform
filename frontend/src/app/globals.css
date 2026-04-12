@@ -22,8 +22,16 @@
   }
 
   body {
-    @apply bg-bg-primary text-text-primary selection:bg-accent-cyan/20 overflow-x-hidden antialiased;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     font-family: 'Inter', -apple-system, sans-serif;
+  }
+
+  ::selection {
+    background-color: rgba(34, 211, 238, 0.2);
   }
 
   /* Professional Technical Font for Data */
