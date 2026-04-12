@@ -129,14 +129,14 @@ To optimize costs and performance, we recommend deploying the Frontend to **Clou
 
 ### 3. Environment Variables (CRITICAL)
 Add these in the Cloudflare Dashboard under **Settings** -> **Environment Variables**:
-- `NEXT_PUBLIC_API_URL`: `http://20.200.255.31`
-- `NEXT_PUBLIC_WS_URL`: `ws://20.200.255.31/api/v1/ws/stream`
+- `NEXT_PUBLIC_API_URL`: `https://back.yourdomain.com` (Replace `yourdomain.com` with yours)
+- `NEXT_PUBLIC_WS_URL`: `wss://back.yourdomain.com/api/v1/ws/stream`
 
-### 4. Custom Domain Setup
-To use your own domain (e.g., `dashboard.yourdomain.com`):
-1.  In Cloudflare Pages, go to **Custom Domains** -> **Set up a custom domain**.
-2.  Enter your domain name.
-3.  Cloudflare will automatically provide the **CNAME** records.
-4.  Update your DNS provider (e.g., GoDaddy, Namecheap) with these CNAME records pointing to your `*.pages.dev` URL.
+### 4. Custom Domain Setup (FINAL)
+To finish the professional setup:
+1.  **Backend Record**: Add an **A** record named `back` pointing to `20.200.255.31` with **Proxy enabled** (Orange Cloud).
+2.  **Dashboard Domain**: In Cloudflare Pages, go to **Custom Domains** -> **Set up a custom domain**.
+3.  Enter your domain (e.g., `dashboard.yourdomain.com`).
+4.  Cloudflare will handle the SSL and DNS setup automatically.
 
 ---

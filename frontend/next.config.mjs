@@ -13,10 +13,10 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Setting defaults for cloud connectivity
+  // Setting defaults for cloud connectivity (SECURE HTTPS/WSS)
   env: {
-    NEXT_PUBLIC_API_URL: 'http://20.200.255.31',
-    NEXT_PUBLIC_WS_URL: 'ws://20.200.255.31/api/v1/ws/stream',
+    NEXT_PUBLIC_API_URL: 'https://back.YOUR_DOMAIN', 
+    NEXT_PUBLIC_WS_URL: 'wss://back.YOUR_DOMAIN/api/v1/ws/stream',
   }
 };
 
