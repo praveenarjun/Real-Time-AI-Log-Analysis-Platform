@@ -42,6 +42,7 @@ export default function Dashboard() {
   const [wsStatus, setWsStatus] = useState("connecting");
   const [mounted, setMounted] = useState(false);
   const [activeReport, setActiveReport] = useState(null);
+  const [anomalies, setAnomalies] = useState([]);
   const [activeAnomaly, setActiveAnomaly] = useState(null);
 
   useEffect(() => {
@@ -56,8 +57,8 @@ export default function Dashboard() {
     const connect = () => {
       if (typeof window === 'undefined') return;
       
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://20.200.255.31";
-      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || baseUrl.replace("http", "ws") + "/api/v1/ws/stream";
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://back.praveen-challa.tech";
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "wss://back.praveen-challa.tech/api/v1/ws/stream";
       
       console.log("Establishing Sonic Tunnel to:", wsUrl);
       setWsStatus("connecting");
@@ -81,6 +82,7 @@ export default function Dashboard() {
             case "ANOMALY":
               console.log("AI Anomaly Detected:", update.payload);
               setActiveAnomaly(update.payload);
+              setAnomalies(prev => [update.payload, ...prev].slice(0, 3));
               break;
             case "INCIDENT_REPORT":
               console.log("AI Forensic Report Generated:", update.payload);
@@ -105,7 +107,7 @@ export default function Dashboard() {
 
     const fetchData = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://20.200.255.31";
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://back.praveen-challa.tech";
         const statsRes = await fetch(`${baseUrl}/api/v1/stats`);
         if (statsRes.ok) {
           const data = await statsRes.json();
@@ -249,26 +251,30 @@ export default function Dashboard() {
 
               <GlassCard title="Recent AI Findings" subtitle="Predictive anomalies verified by forensic core">
                  <div className="space-y-4 mt-6">
-                    {[
-                      { id: 'SIG-823', type: 'Spike Detected', severity: 'CRITICAL', service: 'AUTH-MOD', time: '12m ago' },
-                      { id: 'SIG-824', type: 'Pattern Drift', severity: 'MEDIUM', service: 'DATA-SINK', time: '44m ago' },
-                      { id: 'SIG-825', type: 'Node Stress', severity: 'HIGH', service: 'KAFKA-RX', time: '1h 12m ago' },
-                    ].map((anomaly, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-5 rounded-[2rem] bg-white/5 border border-white/5 hover:border-white/10 transition-all group cursor-pointer relative overflow-hidden shadow-sm">
-                         <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${anomaly.severity === 'CRITICAL' ? 'bg-status-error' : anomaly.severity === 'HIGH' ? 'bg-accent-fuchsia' : 'bg-status-warn'}`} />
-                         <div className="space-y-1.5 pl-2">
-                            <h4 className="mono-data text-[11px] font-black text-white tracking-[0.2em] uppercase">{anomaly.type}</h4>
-                            <div className="flex items-center gap-3">
-                               <span className="mono-data text-[9px] text-text-secondary uppercase font-bold tracking-widest">{anomaly.service}</span>
-                               <span className="text-white/10 uppercase font-black text-[9px]">|</span>
-                               <span className="mono-data text-[9px] text-white/20 uppercase font-black tracking-widest">{anomaly.time}</span>
-                            </div>
-                         </div>
-                         <div className="p-2 rounded-xl border border-white/5 group-hover:border-white/20 transition-all">
-                            <ArrowUpRight className="w-5 h-5 text-text-secondary group-hover:text-white transition-all" />
-                         </div>
-                      </div>
-                    ))}
+                    {anomalies.length > 0 ? (
+                        anomalies.map((anomaly, idx) => (
+                           <div key={idx} onClick={() => setActiveAnomaly(anomaly)} className="flex items-center justify-between p-5 rounded-[2rem] bg-white/5 border border-white/5 hover:border-accent-cyan/20 transition-all group cursor-pointer relative overflow-hidden shadow-sm animate-in fade-in slide-in-from-left duration-500">
+                              <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${anomaly.severity === 'CRITICAL' ? 'bg-status-error shadow-[0_0_10px_rgba(244,63,94,0.5)]' : 'bg-accent-fuchsia shadow-[0_0_10px_rgba(217,70,239,0.5)]'}`} />
+                              <div className="space-y-1.5 pl-2 text-left">
+                                 <h4 className="mono-data text-[11px] font-black text-white tracking-[0.2em] uppercase">{anomaly.type || 'Detection Event'}</h4>
+                                 <div className="flex items-center gap-3">
+                                    <span className="mono-data text-[9px] text-text-secondary uppercase font-bold tracking-widest">{anomaly.service || 'UNKNOWN'}</span>
+                                    <span className="text-white/10 uppercase font-black text-[9px]">|</span>
+                                    <span className="mono-data text-[9px] text-accent-cyan uppercase font-black tracking-widest">REAL-TIME</span>
+                                 </div>
+                              </div>
+                              <div className="p-2 rounded-xl border border-white/5 group-hover:border-white/20 transition-all">
+                                 <ArrowUpRight className="w-5 h-5 text-text-secondary group-hover:text-white transition-all" />
+                              </div>
+                           </div>
+                        ))
+                     ) : (
+                        <div className="py-12 px-6 rounded-[2rem] border border-dashed border-white/5 text-center bg-white/[0.02]">
+                           <p className="mono-data text-[9px] font-bold text-white/20 uppercase tracking-[0.3em]">
+                              Monitoring Forensic Frequency...
+                           </p>
+                        </div>
+                     )}
                     <button className="w-full mt-6 py-5 border border-white/10 rounded-[2rem] mono-data text-[10px] font-black text-white/30 hover:text-white hover:bg-white/5 hover:border-white/20 transition-all tracking-[0.4em] uppercase shadow-lg">
                         ACCESS ARCHIVAL FORENSIC AUDIT
                     </button>
