@@ -1,21 +1,19 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import React, { useState, useEffect } from "react";
 import GlassCard from "./components/GlassCard";
 import LiveLogStream from "./components/LiveLogStream";
+import ImpactCard from "./components/ImpactCard";
 import { 
   Activity, 
   ShieldAlert, 
   Cpu, 
   HardDrive, 
   ArrowUpRight, 
-  Clock8,
   Zap,
   Radio
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 // Mock Data as fallback for "Looks Like Pro" requirement
@@ -40,6 +38,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [wsStatus, setWsStatus] = useState("connecting");
   const [mounted, setMounted] = useState(false);
+  const [activeReport, setActiveReport] = useState(null);
+  const [activeAnomaly, setActiveAnomaly] = useState(null);
 
   useEffect(() => {
     setMounted(true);
@@ -67,9 +67,22 @@ export default function Dashboard() {
 
       socket.onmessage = (event) => {
         try {
-          const batch = JSON.parse(event.data);
-          if (batch.logs) {
-             setLogs((prev) => [...prev, ...batch.logs].slice(-100));
+          const update = JSON.parse(event.data);
+          
+          switch (update.type) {
+            case "LOG_BATCH":
+              if (update.payload.logs) {
+                setLogs((prev) => [...prev, ...update.payload.logs].slice(-100));
+              }
+              break;
+            case "ANOMALY":
+              console.log("AI Anomaly Detected:", update.payload);
+              setActiveAnomaly(update.payload);
+              break;
+            case "INCIDENT_REPORT":
+              console.log("AI Forensic Report Generated:", update.payload);
+              setActiveReport(update.payload);
+              break;
           }
         } catch (err) {
           console.error("Decode Error", err);
@@ -138,6 +151,25 @@ export default function Dashboard() {
                 <Radio className="w-6 h-6 text-status-success animate-pulse" />
             </div>
         </div>
+      </div>
+
+      {/* Intelligence Briefing - The High Impact Area */}
+      <div className="space-y-6">
+         {(activeReport || activeAnomaly) ? (
+            <ImpactCard report={activeReport} anomaly={activeAnomaly} />
+         ) : (
+            <GlassCard className="bg-gradient-to-br from-accent-cyan/10 to-transparent border-accent-cyan/20 text-center py-12">
+               <div className="flex flex-col items-center gap-4">
+                  <div className="p-4 rounded-2xl bg-accent-cyan/10 border border-accent-cyan/20">
+                     <Activity className="w-8 h-8 text-accent-cyan animate-pulse" />
+                  </div>
+                  <h3 className="text-lg font-black text-white tracking-widest uppercase">Initializing Intelligence Mesh</h3>
+                  <p className="max-w-md text-xs text-text-secondary leading-relaxed font-medium">
+                    The AI Log Forensics platform is live. We are monitoring the cloud ingestion bridge for anomalies. Once a failure pattern is identified, your **Executive Verdict** and **Next Steps** will appear here.
+                  </p>
+               </div>
+            </GlassCard>
+         )}
       </div>
 
       {/* Stats Grid */}
@@ -227,10 +259,10 @@ export default function Dashboard() {
                  <div className="p-2 rounded-lg bg-accent-fuchsia/20">
                     <Zap className="w-4 h-4 text-accent-fuchsia" />
                  </div>
-                 <h3 className="text-sm font-black text-white tracking-widest uppercase">System Prediction</h3>
+                 <h3 className="text-sm font-black text-white tracking-widest uppercase">Forensic Prediction</h3>
               </div>
               <p className="text-xs text-text-secondary leading-relaxed font-medium">
-                AI model predicts <span className="text-white">92% stability</span> for the next 4 hours. No critical bottlenecks detected in the Kafka buffer.
+                AI model predicts <span className="text-white">92% stability</span> for the next 4 hours. No critical bottlenecks detected in the Kafka cluster.
               </p>
            </GlassCard>
 

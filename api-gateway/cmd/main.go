@@ -94,17 +94,23 @@ func main() {
 	defer aiClient.Close()
 	l.Info("gRPC Bridge established", "addr", cfg.Gateway.AIServiceGRPC)
 
-	// 6. Initialize WebSocket Manager & Kafka Consumer Bridge
-	wsConsumer, err := kafka.NewConsumer(cfg.Kafka, cfg.Kafka.Topics.RawLogs, l)
-	if err != nil {
-		l.Error("Failed to initialize Kafka consumer for WebSockets", "error", err)
-	}
-
-	wsManager := websocket.NewManager(l, wsConsumer)
+	// 6. Initialize WebSocket Manager & Multichannel Kafka Bridge
+	wsManager := websocket.NewManager(l)
 	wsCtx, wsCancel := context.WithCancel(context.Background())
 	defer wsCancel()
+
+	// Tune into the three forensic frequencies
+	logConsumer, _ := kafka.NewConsumer(cfg.Kafka, cfg.Kafka.Topics.RawLogs, l)
+	wsManager.AddConsumer(wsCtx, cfg.Kafka.Topics.RawLogs, models.UpdateLogBatch, logConsumer)
+
+	anomalyConsumer, _ := kafka.NewConsumer(cfg.Kafka, cfg.Kafka.Topics.Anomalies, l)
+	wsManager.AddConsumer(wsCtx, cfg.Kafka.Topics.Anomalies, models.UpdateAnomaly, anomalyConsumer)
+
+	reportConsumer, _ := kafka.NewConsumer(cfg.Kafka, cfg.Kafka.Topics.IncidentReports, l)
+	wsManager.AddConsumer(wsCtx, cfg.Kafka.Topics.IncidentReports, models.UpdateIncidentReport, reportConsumer)
+
 	go wsManager.Run(wsCtx)
-	l.Info("WebSocket Subscription Manager initialized with Kafka Bridge")
+	l.Info("WebSocket Forensic Radio Station initialized with Multichannel Bridge")
 
 	// 8. Setup Handlers
 	h := handlers.NewHandler(aiClient, rdb, wsManager, m, l, workforceRepo)

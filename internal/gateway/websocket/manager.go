@@ -23,37 +23,42 @@ var upgrader = websocket.Upgrader{
 }
 
 type Manager struct {
-	clients    map[*websocket.Conn]bool
-	broadcast  chan models.LogBatch
-	mu         sync.Mutex
-	logger     *slog.Logger
-	consumer   *kafka.Consumer
+	clients   map[*websocket.Conn]bool
+	broadcast chan models.RealTimeUpdate
+	mu        sync.Mutex
+	logger    *slog.Logger
+	consumers map[string]*kafka.Consumer
 }
 
-func NewManager(l *slog.Logger, consumer *kafka.Consumer) *Manager {
+func NewManager(l *slog.Logger) *Manager {
 	return &Manager{
 		clients:   make(map[*websocket.Conn]bool),
-		broadcast: make(chan models.LogBatch, 100),
+		broadcast: make(chan models.RealTimeUpdate, 100),
 		logger:    l,
-		consumer:  consumer,
+		consumers: make(map[string]*kafka.Consumer),
 	}
+}
+
+func (m *Manager) AddConsumer(ctx context.Context, topic string, topicType models.UpdateType, consumer *kafka.Consumer) {
+	if consumer == nil {
+		return
+	}
+	m.mu.Lock()
+	m.consumers[topic] = consumer
+	m.mu.Unlock()
+
+	go m.consumeTopic(ctx, topic, topicType, consumer)
 }
 
 func (m *Manager) Run(ctx context.Context) {
-	m.logger.Info("WebSocket Manager: Radio Station starting...")
+	m.logger.Info("WebSocket Manager: Forensic Radio Station starting...")
 
-	// 1. Start Kafka Listener Goroutine
-	if m.consumer != nil {
-		go m.consumeKafka(ctx)
-	}
-
-	// 2. Start Broadcaster Loop
 	for {
 		select {
-		case batch := <-m.broadcast:
+		case update := <-m.broadcast:
 			m.mu.Lock()
 			for client := range m.clients {
-				err := client.WriteJSON(batch)
+				err := client.WriteJSON(update)
 				if err != nil {
 					m.logger.Error("WebSocket Broadcaster Error", "error", err)
 					client.Close()
@@ -68,24 +73,41 @@ func (m *Manager) Run(ctx context.Context) {
 	}
 }
 
-func (m *Manager) consumeKafka(ctx context.Context) {
-	m.logger.Info("WebSocket Manager: Listening to Kafka raw-logs...")
+func (m *Manager) consumeTopic(ctx context.Context, topic string, topicType models.UpdateType, consumer *kafka.Consumer) {
+	m.logger.Info("WebSocket Manager: Tuning into frequency", "topic", topic)
 	for {
-		msg, err := m.consumer.ReadMessage(ctx)
+		msg, err := consumer.ReadMessage(ctx)
 		if err != nil {
-			m.logger.Error("Kafka Consumer Error in WS Manager", "error", err)
+			m.logger.Error("Kafka Consumer Error in WS Manager", "topic", topic, "error", err)
 			time.Sleep(2 * time.Second)
 			continue
 		}
 
-		var batch models.LogBatch
-		if err := json.Unmarshal(msg.Value, &batch); err != nil {
-			m.logger.Error("Failed to unmarshal log batch from Kafka", "error", err)
-			continue
+		var payload interface{}
+		switch topicType {
+		case models.UpdateLogBatch:
+			var batch models.LogBatch
+			if err := json.Unmarshal(msg.Value, &batch); err == nil {
+				payload = batch
+			}
+		case models.UpdateAnomaly:
+			var anomaly models.Anomaly
+			if err := json.Unmarshal(msg.Value, &anomaly); err == nil {
+				payload = anomaly
+			}
+		case models.UpdateIncidentReport:
+			var report models.IncidentReport
+			if err := json.Unmarshal(msg.Value, &report); err == nil {
+				payload = report
+			}
 		}
 
-		// Push to broadcast channel
-		m.broadcast <- batch
+		if payload != nil {
+			m.broadcast <- models.RealTimeUpdate{
+				Type:    topicType,
+				Payload: payload,
+			}
+		}
 	}
 }
 
@@ -100,9 +122,8 @@ func (m *Manager) HandleConnection(c *gin.Context) {
 	m.clients[conn] = true
 	m.mu.Unlock()
 
-	m.logger.Info("New client connected to Live Log Stream", "remote_addr", conn.RemoteAddr().String())
+	m.logger.Info("New forensic investigator connected", "remote_addr", conn.RemoteAddr().String())
 
-	// Maintain connection (keep-alive)
 	go func() {
 		defer func() {
 			m.mu.Lock()

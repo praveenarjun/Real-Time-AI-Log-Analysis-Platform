@@ -12,9 +12,9 @@ logger = logging.getLogger("ai-service.kafka")
 
 def get_ssl_context():
     """Helper to create SSL context for Aiven Kafka."""
-    ca_path = os.getenv("KAFKA_CA_PATH", "/etc/kafka-certs/ca.pem")
-    cert_path = os.getenv("KAFKA_CERT_PATH", "/etc/kafka-certs/service.cert")
-    key_path = os.getenv("KAFKA_KEY_PATH", "/etc/kafka-certs/service.key")
+    ca_path = os.getenv("KAFKA_CA_PATH", "/app/certs/ca.pem")
+    cert_path = os.getenv("KAFKA_CERT_PATH", "/app/certs/service.cert")
+    key_path = os.getenv("KAFKA_KEY_PATH", "/app/certs/service.key")
 
     # Only return context if files actually exist (to avoid local development errors)
     if (
