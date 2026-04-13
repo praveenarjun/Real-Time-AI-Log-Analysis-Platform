@@ -15,7 +15,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger("Simulator")
 
 # Environment Config
-COLLECTOR_URL = os.getenv("COLLECTOR_URL", "https://back.praveen-challa.tech/api/v1/ingest/batch")
+DEFAULT_COLLECTOR = "https://back.praveen-challa.tech/api/v1/ingest/batch"
+COLLECTOR_URL = os.getenv("COLLECTOR_URL", DEFAULT_COLLECTOR)
 LOG_RATE = float(os.getenv("LOG_RATE", "10"))  # Logs per second
 ERROR_RATE = float(os.getenv("ERROR_RATE", "0.05"))
 ANOMALY_INTERVAL = int(os.getenv("ANOMALY_INTERVAL", "60"))

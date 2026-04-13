@@ -1,3 +1,4 @@
+"use client";
 import Sidebar from "./components/Sidebar";
 import AlertCenter from "./components/AlertCenter";
 import { ForensicProvider, useForensic } from "./context/ForensicContext";

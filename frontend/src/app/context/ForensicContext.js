@@ -18,11 +18,27 @@ export function ForensicProvider({ children }) {
     let reconnectTimer;
 
     const connect = () => {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://back.praveen-challa.tech";
-      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "wss://back.praveen-challa.tech/api/v1/ws/stream";
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://back.praveen-challa.tech";
+      // Construct WS URL from API URL if not explicitly provided
+      let wsUrl = process.env.NEXT_PUBLIC_WS_URL;
       
+      if (!wsUrl) {
+        const protocol = apiBase.startsWith("https") ? "wss" : "ws";
+        const host = apiBase.replace(/^https?:\/\//, "");
+        wsUrl = `${protocol}://${host}/api/v1/ws/stream`;
+      }
+      
+      console.log(`Forensic Context: Connecting to ${wsUrl}`);
       setWsStatus("connecting");
-      socket = new WebSocket(wsUrl);
+      
+      try {
+        socket = new WebSocket(wsUrl);
+      } catch (err) {
+        console.error("WebSocket Initialization Failed", err);
+        setWsStatus("disconnected");
+        reconnectTimer = setTimeout(connect, 5000);
+        return;
+      }
 
       socket.onopen = () => {
         console.log("Forensic Context: Tunnel Established");
