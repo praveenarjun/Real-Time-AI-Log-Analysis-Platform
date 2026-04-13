@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: database-migration
+  name: database-migration-v2
   namespace: forensic-platform
 spec:
   template:
@@ -19,9 +19,11 @@ spec:
         - /bin/sh
         - -c
         - |
-          # The DATABASE_URL is already encoded. 
-          # We just need to run it against the file.
+          echo "TESTING CONNECTIVITY TO SUPABASE..."
+          psql "$DATABASE_URL" -c "SELECT current_database();"
+          echo "EXECUTING INITIAL SCHEMA RECONSTRUCTION..."
           psql "$DATABASE_URL" -f /migrations/001_initial_schema.sql
+          echo "MIGRATION COMPLETE."
         volumeMounts:
         - name: sql-volume
           mountPath: /migrations

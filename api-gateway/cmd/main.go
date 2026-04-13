@@ -79,10 +79,17 @@ func main() {
 	}
 	pool, err := pgxpool.New(context.Background(), dbURL)
 	if err != nil {
-		l.Error("PostgreSQL connection failed", "error", err)
+		l.Error("CRITICAL: PostgreSQL connection setup failed", "error", err)
 	} else {
+		// PRE-FLIGHT PING: Verify real connectivity before starting router
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := pool.Ping(ctx); err != nil {
+			l.Error("CRITICAL: PostgreSQL ping failed. Dashboard WILL FAIL.", "error", err)
+		} else {
+			l.Info("Connected to PostgreSQL (Workforce DB) - Connectivity Verified")
+		}
 		defer pool.Close()
-		l.Info("Connected to PostgreSQL (Workforce DB)")
 	}
 
 	workforceRepo := repository.NewWorkforceRepository(pool, l)
