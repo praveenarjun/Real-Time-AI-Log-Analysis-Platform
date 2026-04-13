@@ -41,7 +41,7 @@ func main() {
 		log.Fatalf("CRITICAL: Kafka Producer failed: %v", err)
 	}
 	defer producer.Close()
-	l.Info("Kafka Ingestion Mesh initialized", "topic", cfg.Kafka.Topics.RawLogs)
+	l.Info("Kafka Ingestion Mesh initialized", "topic", cfg.Kafka.Topics.RawLogs, "brokers", cfg.Kafka.Brokers)
 
 	// 5. Initialize Ring Buffer Pool (NewRingBuffer(size))
 	ringBuffer := buffer.NewRingBuffer(cfg.Collector.BatchSize)

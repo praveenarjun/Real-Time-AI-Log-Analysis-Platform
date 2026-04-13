@@ -111,7 +111,20 @@ func main() {
 	wsManager.AddConsumer(wsCtx, cfg.Kafka.Topics.IncidentReports, models.UpdateIncidentReport, reportConsumer)
 
 	go wsManager.Run(wsCtx)
-	l.Info("WebSocket Forensic Radio Station initialized with Multichannel Bridge")
+	l.Info("WebSocket Forensic Radio Station initialized", "brokers", cfg.Kafka.Brokers)
+
+	// Internal Network Connectivity Check
+	go func() {
+		collectorAddr := "http://go-collector.forensic-platform.svc.cluster.local/health"
+		client := http.Client{Timeout: 2 * time.Second}
+		resp, err := client.Get(collectorAddr)
+		if err != nil {
+			l.Warn("[NETWORK_DIAGNOSTIC] Internal go-collector is unreachable from Gateway", "error", err, "target", collectorAddr)
+		} else {
+			l.Info("[NETWORK_DIAGNOSTIC] Internal go-collector link verified", "status", resp.Status)
+			resp.Body.Close()
+		}
+	}()
 
 	// 8. Setup Handlers
 	h := handlers.NewHandler(aiClient, rdb, wsManager, m, l, workforceRepo)

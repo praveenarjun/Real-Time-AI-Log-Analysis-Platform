@@ -46,6 +46,7 @@ export function ForensicProvider({ children }) {
       };
 
       socket.onmessage = (event) => {
+        console.log("RAW WS DATA RECEIVED:", event.data);
         try {
           const update = JSON.parse(event.data);
           
