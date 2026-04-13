@@ -103,6 +103,13 @@ data:
     $$ LANGUAGE plpgsql;
 
   002_seed_data.sql: |
+    -- Clean Slate guards
+    DELETE FROM attendance;
+    DELETE FROM leave_requests;
+    DELETE FROM users;
+    DELETE FROM employees;
+    DELETE FROM departments;
+
     -- Seeding Departments
     INSERT INTO departments (id, name, description) VALUES
     ('d1000000-0000-0000-0000-000000000001', 'Engineering', 'Core product development'),

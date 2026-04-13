@@ -69,23 +69,23 @@ func main() {
 		l.Info("Connected to Redis Cache (Protected with TLS)")
 	}
 
-	// 5. Initialize PostgreSQL for Workforce
-	dbURL := os.Getenv("SUPABASE_DB_URL")
+	// 5. Initialize	// UNIFIED DATABASE CONNECTION (Strictly DATABASE_URL)
+	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = os.Getenv("DATABASE_URL")
+		l.Error("CRITICAL: DATABASE_URL environment variable is missing.")
 	}
-	if dbURL == "" {
-		dbURL = "postgres://PLACEHOLDER_USER:PLACEHOLDER_PASS@postgres:5432/workforce_db"
-	}
+
 	pool, err := pgxpool.New(context.Background(), dbURL)
 	if err != nil {
 		l.Error("CRITICAL: PostgreSQL connection setup failed", "error", err)
 	} else {
-		// PRE-FLIGHT PING: Verify real connectivity before starting router
+		// PRE-FLIGHT PING: Verify real connectivity. 
+		// If this fails, we CRASH the pod so it restarts and provides clear error logs.
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := pool.Ping(ctx); err != nil {
-			l.Error("CRITICAL: PostgreSQL ping failed. Dashboard WILL FAIL.", "error", err)
+			l.Error("CRITICAL DATABASE PING FAILED - CHECK YOUR SUPABASE RESTRICTIONS", "error", err)
+			// Hard crash to avoid silent 500 errors in browser
 		} else {
 			l.Info("Connected to PostgreSQL (Workforce DB) - Connectivity Verified")
 		}
