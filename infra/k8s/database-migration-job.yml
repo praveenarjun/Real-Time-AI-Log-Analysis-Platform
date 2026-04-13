@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: database-migration-v3
+  name: database-migration-v4
   namespace: forensic-platform
 spec:
   template:
