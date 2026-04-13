@@ -26,7 +26,7 @@ func NewWorkforceRepository(pool *pgxpool.Pool, logger *slog.Logger) *WorkforceR
 func (r *WorkforceRepository) CreateEmployee(ctx context.Context, emp *models.Employee) error {
 	// Generate EMP-001 sequential code logic
 	var lastCount int
-	err := r.pool.QueryRow(ctx, "SELECT COUNT(*) FROM employees").Scan(&lastCount)
+	err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM "Employees"`).Scan(&lastCount)
 	if err != nil {
 		return fmt.Errorf("failed to get employee count: %w", err)
 	}
@@ -34,8 +34,8 @@ func (r *WorkforceRepository) CreateEmployee(ctx context.Context, emp *models.Em
 	emp.CreatedAt = time.Now()
 	emp.UpdatedAt = time.Now()
 
-	query := `INSERT INTO employees (
-		id, employee_code, first_name, last_name, email, department_id, hire_date, position, salary, is_active, created_at, updated_at
+	query := `INSERT INTO "Employees" (
+		"id", "EmployeeCode", "FirstName", "LastName", "Email", "DepartmentId", "HireDate", "Position", "Salary", "IsActive", "CreatedAt", "UpdatedAt"
 	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 
 	_, err = r.pool.Exec(ctx, query,
@@ -46,10 +46,10 @@ func (r *WorkforceRepository) CreateEmployee(ctx context.Context, emp *models.Em
 }
 
 func (r *WorkforceRepository) RecordAttendance(ctx context.Context, att *models.Attendance) error {
-	query := `INSERT INTO attendance (
-		id, employee_id, date, check_in, status, created_at, updated_at
+	query := `INSERT INTO "Attendance" (
+		"id", "EmployeeId", "Date", "CheckIn", "Status", "CreatedAt", "UpdatedAt"
 	) VALUES ($1, $2, $3, $4, $5, $6, $7)
-	ON CONFLICT (employee_id, date) DO UPDATE SET check_in = EXCLUDED.check_in, updated_at = EXCLUDED.updated_at`
+	ON CONFLICT ("EmployeeId", "Date") DO UPDATE SET "CheckIn" = EXCLUDED."CheckIn", "UpdatedAt" = EXCLUDED."UpdatedAt"`
 
 	_, err := r.pool.Exec(ctx, query,
 		uuid.New(), att.EmployeeID, att.Date, att.CheckIn, att.Status, time.Now(), time.Now(),
@@ -58,7 +58,7 @@ func (r *WorkforceRepository) RecordAttendance(ctx context.Context, att *models.
 }
 
 func (r *WorkforceRepository) GetDepartmentHeadcount(ctx context.Context) ([]map[string]interface{}, error) {
-	rows, err := r.pool.Query(ctx, "SELECT department_name, headcount, salary_percentage FROM get_department_headcount()")
+	rows, err := r.pool.Query(ctx, `SELECT "DepartmentName", "Headcount", "SalaryPercentage" FROM "GetDepartmentHeadcount"()`)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func (r *WorkforceRepository) GetDepartmentHeadcount(ctx context.Context) ([]map
 }
 
 func (r *WorkforceRepository) ListEmployees(ctx context.Context) ([]models.Employee, error) {
-	rows, err := r.pool.Query(ctx, "SELECT id, employee_code, first_name, last_name, department_id, position, is_active FROM employees")
+	rows, err := r.pool.Query(ctx, `SELECT "id", "EmployeeCode", "FirstName", "LastName", "DepartmentId", "Position", "IsActive" FROM "Employees"`)
 	if err != nil {
 		return nil, err
 	}
