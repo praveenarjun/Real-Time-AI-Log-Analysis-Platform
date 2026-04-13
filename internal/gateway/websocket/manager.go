@@ -33,7 +33,7 @@ type Manager struct {
 func NewManager(l *slog.Logger) *Manager {
 	return &Manager{
 		clients:   make(map[*websocket.Conn]bool),
-		broadcast: make(chan models.RealTimeUpdate, 100),
+		broadcast: make(chan models.RealTimeUpdate, 1000),
 		logger:    l,
 		consumers: make(map[string]*kafka.Consumer),
 	}

@@ -71,12 +71,16 @@ export function ForensicProvider({ children }) {
         }
       };
 
-      socket.onclose = () => {
+      socket.onclose = (event) => {
+        console.warn(`Forensic Context: Tunnel Severed. Code: ${event.code}, Reason: ${event.reason}`);
         setWsStatus("disconnected");
         reconnectTimer = setTimeout(connect, 5000);
       };
 
-      socket.onerror = () => socket.close();
+      socket.onerror = (err) => {
+        console.error("Forensic Context: Socket Error", err);
+        socket.close();
+      };
     };
 
     connect();
@@ -84,7 +88,7 @@ export function ForensicProvider({ children }) {
       if (socket) socket.close();
       clearTimeout(reconnectTimer);
     };
-  }, [isAlertOpen]);
+  }, []); // Removed dependency on isAlertOpen to prevent reconnect cycles
 
   const toggleAlerts = () => {
     setIsAlertOpen(!isAlertOpen);
