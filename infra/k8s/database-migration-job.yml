@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: database-migration-v2
+  name: database-migration-v3
   namespace: forensic-platform
 spec:
   template:
@@ -23,7 +23,9 @@ spec:
           psql "$DATABASE_URL" -c "SELECT current_database();"
           echo "EXECUTING INITIAL SCHEMA RECONSTRUCTION..."
           psql "$DATABASE_URL" -f /migrations/001_initial_schema.sql
-          echo "MIGRATION COMPLETE."
+          echo "EXECUTING SEED DATA INJECTION..."
+          psql "$DATABASE_URL" -f /migrations/002_seed_data.sql
+          echo "MIGRATION AND SEEDING COMPLETE."
         volumeMounts:
         - name: sql-volume
           mountPath: /migrations
