@@ -89,24 +89,33 @@ func (m *Manager) consumeTopic(ctx context.Context, topic string, topicType mode
 			var batch models.LogBatch
 			if err := json.Unmarshal(msg.Value, &batch); err == nil {
 				payload = batch
+			} else {
+				m.logger.Error("WebSocket Manager: LogBatch unmarshal failed", "error", err, "topic", topic)
 			}
 		case models.UpdateAnomaly:
 			var anomaly models.Anomaly
 			if err := json.Unmarshal(msg.Value, &anomaly); err == nil {
 				payload = anomaly
+			} else {
+				m.logger.Error("WebSocket Manager: Anomaly unmarshal failed", "error", err, "topic", topic)
 			}
 		case models.UpdateIncidentReport:
 			var report models.IncidentReport
 			if err := json.Unmarshal(msg.Value, &report); err == nil {
 				payload = report
+			} else {
+				m.logger.Error("WebSocket Manager: IncidentReport unmarshal failed", "error", err, "topic", topic)
 			}
 		}
 
 		if payload != nil {
+			m.logger.Debug("WebSocket Manager: Broadcasting update", "topic", topic, "type", topicType)
 			m.broadcast <- models.RealTimeUpdate{
 				Type:    topicType,
 				Payload: payload,
 			}
+		} else {
+			m.logger.Warn("WebSocket Manager: Received empty or invalid payload", "topic", topic)
 		}
 	}
 }
