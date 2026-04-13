@@ -13,10 +13,10 @@ spec:
     - dashboard.yourdomain.com
     secretName: tls-secret
   rules:
-  - host: dashboard.yourdomain.com
+  - host: back.praveen-challa.tech
     http:
       paths:
-      - path: /api
+      - path: /
         pathType: Prefix
         backend:
           service:

@@ -25,6 +25,7 @@ export function ForensicProvider({ children }) {
       if (!wsUrl) {
         const protocol = apiBase.startsWith("https") ? "wss" : "ws";
         const host = apiBase.replace(/^https?:\/\//, "");
+        // Targeting the specific WebSocket frequency on the backend
         wsUrl = `${protocol}://${host}/api/v1/ws/stream`;
       }
       

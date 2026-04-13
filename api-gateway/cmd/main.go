@@ -162,7 +162,7 @@ func main() {
 	{
 		api.GET("/logs", h.SearchLogs)
 		api.POST("/analyze", h.ManualAnalysis)
-		api.GET("/ws/stream", h.StreamLogs)
+		api.GET("/ws/stream", h.StreamLogs) // Aligned with Ingress WebSocket path
 
 		// Dashboard & Stats
 		api.GET("/stats", h.GetDashboardStats)
