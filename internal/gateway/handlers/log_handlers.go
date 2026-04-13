@@ -12,7 +12,7 @@ func (h *Handler) SearchLogs(c *gin.Context) {
 	
 	logs := []gin.H{}
 
-	h.logger.Debug("Serving resilient search results to dashboard")
+	h.logger.Info("AI Dashboard requested historical forensic log search")
 	c.JSON(http.StatusOK, gin.H{
 		"logs": logs,
 		"total": len(logs),

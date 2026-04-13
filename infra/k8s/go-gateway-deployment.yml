@@ -26,7 +26,7 @@ spec:
       - name: gateway
         image: acrlogpraveen99.azurecr.io/go-gateway:latest
         imagePullPolicy: Always
-        command: ["/bin/sh", "-c", "export DATABASE_URL='postgresql://PLACEHOLDER_DB_USER:PLACEHOLDER_DB_PASS@PLACEHOLDER_DB_HOST:6543/postgres?sslmode=require&prefer_simple_protocol=true' && ./main"]
+        # Fixed: Removed placeholder DATABASE_URL export that was breaking Supabase connectivity
         volumeMounts:
         - name: kafka-certs-vol
           mountPath: "/app/certs"
