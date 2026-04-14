@@ -75,21 +75,30 @@ func main() {
 		l.Error("CRITICAL: DATABASE_URL environment variable is missing.")
 	}
 
-	pool, err := pgxpool.New(context.Background(), dbURL)
+	// FORCE IPv4: Supabase IPv6 addresses are unreachable in some Azure AKS regions.
+	dbConfig, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
-		l.Error("CRITICAL: PostgreSQL connection setup failed", "error", err)
+		l.Error("CRITICAL: PostgreSQL config parsing failed", "error", err)
 	} else {
-		// PRE-FLIGHT PING: Verify real connectivity. 
-		// If this fails, we CRASH the pod so it restarts and provides clear error logs.
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := pool.Ping(ctx); err != nil {
-			l.Error("CRITICAL DATABASE PING FAILED - CHECK YOUR SUPABASE RESTRICTIONS", "error", err)
-			// Hard crash to avoid silent 500 errors in browser
-		} else {
-			l.Info("Connected to PostgreSQL (Workforce DB) - Connectivity Verified")
+		dbConfig.ConnConfig.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			var d net.Dialer
+			return d.DialContext(ctx, "tcp4", addr)
 		}
-		defer pool.Close()
+
+		pool, err = pgxpool.NewWithConfig(context.Background(), dbConfig)
+		if err != nil {
+			l.Error("CRITICAL: PostgreSQL connection setup failed", "error", err)
+		} else {
+			// PRE-FLIGHT PING: Verify real connectivity. 
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := pool.Ping(ctx); err != nil {
+				l.Error("CRITICAL DATABASE PING FAILED - VERIFYING IPv4 FALLBACK", "error", err)
+			} else {
+				l.Info("Connected to PostgreSQL (Workforce DB) - IPv4 Tunnel Verified")
+			}
+			defer pool.Close()
+		}
 	}
 
 	workforceRepo := repository.NewWorkforceRepository(pool, l)
