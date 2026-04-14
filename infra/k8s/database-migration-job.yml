@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: database-migration-v5
+  name: database-migration-v6
   namespace: forensic-platform
 spec:
   template:
@@ -33,5 +33,10 @@ spec:
       - name: sql-volume
         configMap:
           name: pg-migration-sql
+          items:
+          - key: 001_initial_schema.sql
+            path: 001_initial_schema.sql
+          - key: 002_seed_data.sql
+            path: 002_seed_data.sql
       restartPolicy: Never
   backoffLimit: 2

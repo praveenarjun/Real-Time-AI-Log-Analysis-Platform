@@ -87,18 +87,19 @@ data:
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
 
+    -- INDEXES
+    CREATE INDEX IF NOT EXISTS idx_employee_department ON employees (department_id);
+    CREATE INDEX IF NOT EXISTS idx_employee_manager ON employees (manager_id);
+    CREATE INDEX IF NOT EXISTS idx_employee_active_dept ON employees (is_active, department_id);
+    CREATE INDEX IF NOT EXISTS idx_employee_name ON employees (last_name, first_name);
+    CREATE INDEX IF NOT EXISTS idx_attendance_emp_date ON attendance (employee_id, date);
+    CREATE INDEX IF NOT EXISTS idx_attendance_date_status ON attendance (date, status);
+    CREATE INDEX IF NOT EXISTS idx_leave_emp_status ON leave_requests (employee_id, status);
+    CREATE INDEX IF NOT EXISTS idx_leave_status_date ON leave_requests (status, start_date);
+
     -- Functions
     CREATE OR REPLACE FUNCTION get_department_headcount()
     RETURNS TABLE(department_name VARCHAR, headcount BIGINT, salary_percentage DOUBLE PRECISION) AS $$
-    BEGIN
-        RETURN QUERY
-        SELECT 
-            d.name,
-            COUNT(e.id),
-            COALESCE((SUM(e.salary) / NULLIF(SUM(SUM(e.salary)) OVER (), 0)) * 100, 0)
-        FROM departments d
-        LEFT JOIN employees e ON d.id = e.department_id AND e.is_active = true
-        GROUP BY d.name;
     END;
     $$ LANGUAGE plpgsql;
 
