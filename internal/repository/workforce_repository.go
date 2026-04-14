@@ -73,9 +73,9 @@ func (r *WorkforceRepository) GetDepartmentHeadcount(ctx context.Context) ([]map
 			return nil, err
 		}
 		results = append(results, map[string]interface{}{
-			"department": name,
-			"headcount":  headcount,
-			"salary_pct": percentage,
+			"department_name": name,
+			"count":           headcount,
+			"salary_pct":      percentage,
 		})
 	}
 	return results, nil

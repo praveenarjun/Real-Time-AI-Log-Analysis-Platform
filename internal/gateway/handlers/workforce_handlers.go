@@ -30,7 +30,7 @@ func (h *Handler) ListEmployees(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch employees"})
 		return
 	}
-	c.JSON(http.StatusOK, employees)
+	c.JSON(http.StatusOK, gin.H{"employees": employees})
 }
 
 func (h *Handler) TrackAttendance(c *gin.Context) {
@@ -56,5 +56,5 @@ func (h *Handler) GetDepartmentHeadcount(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
-	c.JSON(http.StatusOK, stats)
+	c.JSON(http.StatusOK, gin.H{"headcount": stats})
 }
