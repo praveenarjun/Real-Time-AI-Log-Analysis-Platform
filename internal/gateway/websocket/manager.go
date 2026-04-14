@@ -75,13 +75,36 @@ func (m *Manager) Run(ctx context.Context) {
 
 func (m *Manager) consumeTopic(ctx context.Context, topic string, topicType models.UpdateType, consumer *kafka.Consumer) {
 	m.logger.Info("WebSocket Manager: Tuning into frequency", "topic", topic)
+	backoff := 2 * time.Second
+	maxBackoff := 30 * time.Second
+
 	for {
+		select {
+		case <-ctx.Done():
+			m.logger.Info("WebSocket Manager: Context cancelled, stopping consumer", "topic", topic)
+			return
+		default:
+		}
+
 		msg, err := consumer.ReadMessage(ctx)
 		if err != nil {
-			m.logger.Error("Kafka Consumer Error in WS Manager", "topic", topic, "error", err)
-			time.Sleep(2 * time.Second)
+			// Only log at WARN level to reduce noise, and use exponential backoff
+			if ctx.Err() != nil {
+				return // Context cancelled, exit cleanly
+			}
+			m.logger.Warn("Kafka consumer reconnecting", "topic", topic, "backoff", backoff.String())
+			time.Sleep(backoff)
+			if backoff < maxBackoff {
+				backoff = backoff * 2
+				if backoff > maxBackoff {
+					backoff = maxBackoff
+				}
+			}
 			continue
 		}
+
+		// Reset backoff on successful read
+		backoff = 2 * time.Second
 
 		var payload interface{}
 		switch topicType {
