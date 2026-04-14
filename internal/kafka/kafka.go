@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"log/slog"
-	"net"
 	"os"
 	"time"
 
@@ -29,24 +28,17 @@ func NewProducer(cfg config.KafkaConfig, l *slog.Logger, m *metrics.Metrics) (*P
 	}
 
 	if cfg.TLS || cfg.User != "" {
-		dialer := &kafkaGo.Dialer{
-			Timeout:   10 * time.Second,
-			DualStack: true,
-		}
+		transport := &kafkaGo.Transport{}
 		if cfg.TLS {
-			dialer.TLS = buildTLSConfig(cfg, l)
+			transport.TLS = buildTLSConfig(cfg, l)
 		}
 		if cfg.User != "" {
-			dialer.SASLMechanism = plain.Mechanism{
+			transport.SASL = plain.Mechanism{
 				Username: cfg.User,
 				Password: cfg.Pass,
 			}
 		}
-		writer.Transport = &kafkaGo.Transport{
-			Dial: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				return dialer.DialContext(ctx, network, addr)
-			},
-		}
+		writer.Transport = transport
 	}
 
 	return &Producer{writer: writer, logger: l}, nil
