@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import React, { useState, useEffect } from "react";
 import GlassCard from "../components/GlassCard";
 import LiveLogStream from "../components/LiveLogStream";
+import { useForensic } from "../context/ForensicContext";
 import { 
   Terminal, 
   Search, 
@@ -16,34 +17,40 @@ import {
 import { motion } from "framer-motion";
 
 export default function LogsPage() {
-  const [logs, setLogs] = useState([]);
+  const { logs: realtimeLogs, wsStatus } = useForensic();
+  const [historicalLogs, setHistoricalLogs] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLevel, setFilterLevel] = useState("ALL");
 
+  // Fetch historical logs from backend
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://back.praveen-challa.tech";
         const res = await fetch(`${baseUrl}/api/v1/logs?limit=100`);
         if (res.ok) {
           const data = await res.json();
-          setLogs(data.logs || []);
+          if (data.logs && data.logs.length > 0) {
+            setHistoricalLogs(data.logs);
+          }
         }
       } catch (err) {
-        console.warn("Backend unavailable", err);
+        console.warn("Backend unavailable for historical logs", err);
       }
     };
 
     fetchLogs();
-    const interval = setInterval(fetchLogs, 5000);
-    return () => clearInterval(interval);
   }, []);
 
-  const filteredLogs = logs.filter(log => {
-    const matchesSearch = log.message?.toLowerCase().includes(searchTerm.toLowerCase());
+  // Merge real-time WebSocket logs with historical ones
+  const allLogs = [...realtimeLogs, ...historicalLogs].slice(0, 200);
+
+  const filteredLogs = allLogs.filter(log => {
+    const matchesSearch = (log.message || "").toLowerCase().includes(searchTerm.toLowerCase());
     const matchesLevel = filterLevel === "ALL" || log.level === filterLevel;
     return matchesSearch && matchesLevel;
   });
+
 
   return (
     <div className="space-y-8 max-w-[1400px]">
