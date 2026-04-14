@@ -86,6 +86,12 @@ func main() {
 			dbURL = strings.ReplaceAll(dbURL, ":5432", ":6543")
 		}
 
+		// AUTO-FIX 2: Ensure password special characters are URL-encoded (especially the '*')
+		if strings.Contains(dbURL, "*") && !strings.Contains(dbURL, "%2A") {
+			l.Warn("Self-healing: Detected unencoded star (*) in password. Encoding for URL safety...")
+			dbURL = strings.ReplaceAll(dbURL, "*", "%2A")
+		}
+
 		// Log the host we are targetting (sanitized)
 		if parts := strings.Split(dbURL, "@"); len(parts) > 1 {
 			l.Info("Targeting database host", "host", strings.Split(parts[1], "/")[0])
