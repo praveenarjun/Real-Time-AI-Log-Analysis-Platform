@@ -38,6 +38,10 @@ class LogKafkaConsumer:
 
         # Get the SSL context for Aiven
         ssl_ctx = get_ssl_context()
+        
+        # Get SASL credentials
+        sasl_user = os.getenv("KAFKA_USER")
+        sasl_pass = os.getenv("KAFKA_PASS")
 
         self.consumer = AIOKafkaConsumer(
             self.topic,
@@ -45,10 +49,13 @@ class LogKafkaConsumer:
             group_id=self.group_id,
             auto_offset_reset="latest",
             enable_auto_commit=True,
-            # --- SSL Config Added Here ---
-            security_protocol="SSL" if ssl_ctx else "PLAINTEXT",
+            # --- SASL_SSL Config ---
+            security_protocol="SASL_SSL" if (ssl_ctx and sasl_user) else ("SSL" if ssl_ctx else "PLAINTEXT"),
             ssl_context=ssl_ctx,
-            # -----------------------------
+            sasl_mechanism="PLAIN" if sasl_user else None,
+            sasl_plain_username=sasl_user,
+            sasl_plain_password=sasl_pass,
+            # -----------------------
             value_deserializer=lambda m: json.loads(m.decode("utf-8")),
         )
 
@@ -114,12 +121,19 @@ class ResultKafkaProducer:
         # Get the SSL context for Aiven
         ssl_ctx = get_ssl_context()
 
+        # Get SASL credentials
+        sasl_user = os.getenv("KAFKA_USER")
+        sasl_pass = os.getenv("KAFKA_PASS")
+
         self.producer = AIOKafkaProducer(
             bootstrap_servers=self.brokers,
-            # --- SSL Config Added Here ---
-            security_protocol="SSL" if ssl_ctx else "PLAINTEXT",
+            # --- SASL_SSL Config ---
+            security_protocol="SASL_SSL" if (ssl_ctx and sasl_user) else ("SSL" if ssl_ctx else "PLAINTEXT"),
             ssl_context=ssl_ctx,
-            # -----------------------------
+            sasl_mechanism="PLAIN" if sasl_user else None,
+            sasl_plain_username=sasl_user,
+            sasl_plain_password=sasl_pass,
+            # -----------------------
             value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         )
 
