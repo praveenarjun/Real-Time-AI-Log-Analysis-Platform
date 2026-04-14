@@ -22,8 +22,10 @@ func NewWorkforceRepository(pool *pgxpool.Pool, logger *slog.Logger) *WorkforceR
 		logger: logger,
 	}
 }
-
 func (r *WorkforceRepository) CreateEmployee(ctx context.Context, emp *models.Employee) error {
+	if r.pool == nil {
+		return fmt.Errorf("database pool not initialized")
+	}
 	// Generate EMP-001 sequential code logic
 	var lastCount int
 	err := r.pool.QueryRow(ctx, "SELECT COUNT(*) FROM employees").Scan(&lastCount)
@@ -46,6 +48,9 @@ func (r *WorkforceRepository) CreateEmployee(ctx context.Context, emp *models.Em
 }
 
 func (r *WorkforceRepository) RecordAttendance(ctx context.Context, att *models.Attendance) error {
+	if r.pool == nil {
+		return fmt.Errorf("database pool not initialized")
+	}
 	query := `INSERT INTO attendance (
 		id, employee_id, date, check_in, status, created_at, updated_at
 	) VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -58,6 +63,9 @@ func (r *WorkforceRepository) RecordAttendance(ctx context.Context, att *models.
 }
 
 func (r *WorkforceRepository) GetDepartmentHeadcount(ctx context.Context) ([]map[string]interface{}, error) {
+	if r.pool == nil {
+		return nil, fmt.Errorf("database pool not initialized")
+	}
 	rows, err := r.pool.Query(ctx, "SELECT department_name, headcount, salary_percentage FROM get_department_headcount()")
 	if err != nil {
 		return nil, err
@@ -82,6 +90,9 @@ func (r *WorkforceRepository) GetDepartmentHeadcount(ctx context.Context) ([]map
 }
 
 func (r *WorkforceRepository) ListEmployees(ctx context.Context) ([]models.Employee, error) {
+	if r.pool == nil {
+		return nil, fmt.Errorf("database pool not initialized")
+	}
 	rows, err := r.pool.Query(ctx, "SELECT id, employee_code, first_name, last_name, department_id, position, is_active FROM employees")
 	if err != nil {
 		return nil, err
