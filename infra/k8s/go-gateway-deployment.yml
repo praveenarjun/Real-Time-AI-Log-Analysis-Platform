@@ -46,9 +46,7 @@ spec:
         - configMapRef:
             name: log-analyzer-config
         - secretRef:
-            name: forensic-secrets # Primary source for DB and Kafka credentials
-        - secretRef:
-            name: log-analyzer-secrets
+            name: forensic-secrets # Single source of truth for DB, Kafka, Redis credentials
         ports:
         - containerPort: 8080
 ---
