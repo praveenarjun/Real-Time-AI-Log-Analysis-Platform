@@ -75,6 +75,7 @@ func main() {
 		l.Error("CRITICAL: DATABASE_URL environment variable is missing.")
 	}
 
+	var pool *pgxpool.Pool
 	// FORCE IPv4: Supabase IPv6 addresses are unreachable in some Azure AKS regions.
 	dbConfig, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
