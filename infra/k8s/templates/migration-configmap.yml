@@ -100,6 +100,15 @@ data:
     -- Functions
     CREATE OR REPLACE FUNCTION get_department_headcount()
     RETURNS TABLE(department_name VARCHAR, headcount BIGINT, salary_percentage DOUBLE PRECISION) AS $$
+    BEGIN
+        RETURN QUERY
+        SELECT
+            d.name,
+            COUNT(e.id),
+            COALESCE((SUM(e.salary) / NULLIF(SUM(SUM(e.salary)) OVER (), 0)) * 100, 0)
+        FROM departments d
+        LEFT JOIN employees e ON d.id = e.department_id AND e.is_active = true
+        GROUP BY d.name;
     END;
     $$ LANGUAGE plpgsql;
 
