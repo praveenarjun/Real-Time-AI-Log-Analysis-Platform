@@ -79,6 +79,13 @@ func main() {
 	if dbURL == "" {
 		l.Error("CRITICAL: No database connection string found in config or environment.")
 	} else {
+		// AUTO-FIX: If we are targeting the direct IPv6 host, switch to the IPv4 pooler automatically.
+		if strings.Contains(dbURL, "db.ivljtbrvvhfrkauxxojn.supabase.co") {
+			l.Warn("Self-healing: Detected Direct IPv6 host. Redirecting to IPv4 Pooler Tunnel...")
+			dbURL = strings.ReplaceAll(dbURL, "db.ivljtbrvvhfrkauxxojn.supabase.co", "aws-1-ap-northeast-2.pooler.supabase.com")
+			dbURL = strings.ReplaceAll(dbURL, ":5432", ":6543")
+		}
+
 		// Log the host we are targetting (sanitized)
 		if parts := strings.Split(dbURL, "@"); len(parts) > 1 {
 			l.Info("Targeting database host", "host", strings.Split(parts[1], "/")[0])

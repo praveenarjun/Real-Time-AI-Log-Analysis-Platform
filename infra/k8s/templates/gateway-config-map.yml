@@ -7,10 +7,10 @@ data:
   config.yaml: |
     server:
       gatewayPort: 8080
-    database:
-      dsn: "postgresql://PLACEHOLDER_USER:PLACEHOLDER_DB_PASS@PLACEHOLDER_HOST:5432/postgres?sslmode=require"
     kafka:
       brokers: ["forensic-kafka-ai-log-analyser.l.aivencloud.com:19800"]
+    database:
+      dsn: "postgresql://postgres.ivljtbrvvhfrkauxxojn:raveen*4125@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require"
     redis:
       url: "feasible-bedbug-40106.upstash.io:6379"
     logging:
