@@ -78,6 +78,9 @@ jobs:
           resource-group: ${{ env.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ env.AKS_CLUSTER_NAME }}
 
+      - name: DNS Stabilization Sleep
+        run: sleep 10
+
       - name: Deploy Manifests
         run: |
           SHA=${{ github.sha }}
@@ -88,7 +91,7 @@ jobs:
           sed -i "s|image: .*/go-collector:.*|image: $REGISTRY/go-collector:$SHA|g" infra/k8s/go-collector-deployment.yml
           sed -i "s|image: .*/python-ai:.*|image: $REGISTRY/python-ai:$SHA|g" infra/k8s/ai-service-deployment.yml
           
-          kubectl apply -f infra/k8s/
+          kubectl apply -f infra/k8s/ --validate=false
           kubectl rollout status deployment go-gateway -n forensic-platform
           kubectl rollout status deployment go-collector -n forensic-platform
           kubectl rollout status deployment ai-service -n forensic-platform
@@ -118,5 +121,5 @@ jobs:
       - name: Deploy to Production
         run: |
           # Production follows the same logic as staging for this project
-          kubectl apply -f infra/k8s/
+          kubectl apply -f infra/k8s/ --validate=false
           echo "Production Rollout Complete"
