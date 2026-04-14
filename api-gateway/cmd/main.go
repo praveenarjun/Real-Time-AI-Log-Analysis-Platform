@@ -143,7 +143,7 @@ func main() {
 	l.Info("gRPC Bridge established", "addr", cfg.Gateway.AIServiceGRPC)
 
 	// 6. Initialize WebSocket Manager & Multichannel Kafka Bridge
-	wsManager := websocket.NewManager(l)
+	wsManager := websocket.NewManager(rdb, l)
 	wsCtx, wsCancel := context.WithCancel(context.Background())
 	defer wsCancel()
 

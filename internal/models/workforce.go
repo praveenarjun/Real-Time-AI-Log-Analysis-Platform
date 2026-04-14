@@ -31,10 +31,11 @@ type Employee struct {
 	HireDate     time.Time `json:"hire_date"`
 	Position     string    `json:"position"`
 	Salary       float64   `json:"salary"`
-	Address      string    `json:"address"`
-	IsActive     bool      `json:"is_active"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	Address        string    `json:"address"`
+	IsActive       bool      `json:"is_active"`
+	DepartmentName string    `json:"department_name"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 // User represents the users table

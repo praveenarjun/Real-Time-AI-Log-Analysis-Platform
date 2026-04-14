@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/redis/go-redis/v9"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"praveenchalla.local/ai-log-analyzer/internal/kafka"
@@ -23,19 +25,21 @@ var upgrader = websocket.Upgrader{
 }
 
 type Manager struct {
-	clients   map[*websocket.Conn]bool
-	broadcast chan models.RealTimeUpdate
-	mu        sync.Mutex
-	logger    *slog.Logger
-	consumers map[string]*kafka.Consumer
+	clients     map[*websocket.Conn]bool
+	broadcast   chan models.RealTimeUpdate
+	mu          sync.Mutex
+	logger      *slog.Logger
+	consumers   map[string]*kafka.Consumer
+	redisClient *redis.Client
 }
 
-func NewManager(l *slog.Logger) *Manager {
+func NewManager(rdb *redis.Client, l *slog.Logger) *Manager {
 	return &Manager{
-		clients:   make(map[*websocket.Conn]bool),
-		broadcast: make(chan models.RealTimeUpdate, 1000),
-		logger:    l,
-		consumers: make(map[string]*kafka.Consumer),
+		clients:     make(map[*websocket.Conn]bool),
+		broadcast:   make(chan models.RealTimeUpdate, 1000),
+		logger:      l,
+		consumers:   make(map[string]*kafka.Consumer),
+		redisClient: rdb,
 	}
 }
 
@@ -133,6 +137,23 @@ func (m *Manager) consumeTopic(ctx context.Context, topic string, topicType mode
 
 		if payload != nil {
 			m.logger.Debug("WebSocket Manager: Broadcasting update", "topic", topic, "type", topicType)
+
+			// Persistence Layer: Store in Redis Ring Buffer
+			if m.redisClient != nil {
+				data, _ := json.Marshal(payload)
+				key := "recent_logs"
+				if topicType == models.UpdateAnomaly {
+					key = "recent_anomalies"
+				}
+
+				pipe := m.redisClient.Pipeline()
+				pipe.LPush(ctx, key, string(data))
+				pipe.LTrim(ctx, key, 0, 999) // Keep last 1000 items
+				if _, err := pipe.Exec(ctx); err != nil {
+					m.logger.Error("Persistence failure", "error", err, "key", key)
+				}
+			}
+
 			m.broadcast <- models.RealTimeUpdate{
 				Type:    topicType,
 				Payload: payload,

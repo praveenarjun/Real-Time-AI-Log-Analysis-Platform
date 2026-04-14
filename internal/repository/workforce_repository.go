@@ -93,7 +93,16 @@ func (r *WorkforceRepository) ListEmployees(ctx context.Context) ([]models.Emplo
 	if r.pool == nil {
 		return nil, fmt.Errorf("database pool not initialized")
 	}
-	rows, err := r.pool.Query(ctx, "SELECT id, employee_code, first_name, last_name, department_id, position, is_active FROM employees")
+
+	query := `
+		SELECT 
+			e.id, e.employee_code, e.first_name, e.last_name, e.email,
+			e.department_id, d.name as department_name, e.position, e.is_active 
+		FROM employees e
+		LEFT JOIN departments d ON e.department_id = d.id
+		ORDER BY e.created_at DESC`
+
+	rows, err := r.pool.Query(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +111,10 @@ func (r *WorkforceRepository) ListEmployees(ctx context.Context) ([]models.Emplo
 	var employees []models.Employee
 	for rows.Next() {
 		var e models.Employee
-		if err := rows.Scan(&e.ID, &e.EmployeeCode, &e.FirstName, &e.LastName, &e.DepartmentID, &e.Position, &e.IsActive); err != nil {
+		if err := rows.Scan(
+			&e.ID, &e.EmployeeCode, &e.FirstName, &e.LastName, &e.Email,
+			&e.DepartmentID, &e.DepartmentName, &e.Position, &e.IsActive,
+		); err != nil {
 			return nil, err
 		}
 		employees = append(employees, e)

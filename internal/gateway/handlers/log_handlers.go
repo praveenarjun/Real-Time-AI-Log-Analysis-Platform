@@ -1,20 +1,32 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 func (h *Handler) SearchLogs(c *gin.Context) {
-	// 1. In a production state, we'd query Elasticsearch/Loki.
-	// 2. We are providing a resilient "Healthy State" response to ensure the Dashboard can load.
-	
-	logs := []gin.H{}
+	// Fetch real logs from Redis 'recent_logs' ring buffer
+	rawLogs, err := h.redisClient.LRange(c.Request.Context(), "recent_logs", 0, 99).Result()
+	if err != nil {
+		h.logger.Error("Failed to fetch logs from Redis", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch logs"})
+		return
+	}
 
-	h.logger.Info("AI Dashboard requested historical forensic log search")
+	logs := make([]interface{}, 0)
+	for _, raw := range rawLogs {
+		var logEntry interface{}
+		if err := json.Unmarshal([]byte(raw), &logEntry); err == nil {
+			logs = append(logs, logEntry)
+		}
+	}
+
+	h.logger.Info("AI Dashboard served real-time forensic logs from persistence buffer", "count", len(logs))
 	c.JSON(http.StatusOK, gin.H{
-		"logs": logs,
+		"logs":  logs,
 		"total": len(logs),
 	})
 }

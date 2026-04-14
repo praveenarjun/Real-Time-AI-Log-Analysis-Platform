@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -64,14 +65,26 @@ func (h *Handler) PredictFailures(c *gin.Context) {
 func (h *Handler) ManualAnalysis(c *gin.Context) {
 	// For the Cloudflare/Pro-Level Demo, we trigger a manual forensic audit
 	// of the recent log window captured in the buffer.
-	h.logger.Info("Triggering Manual AI Forensic Audit...")
+	h.logger.Info("Triggering Manual AI Forensic Audit from Redis buffer...")
 
-	// 1. In a production scenario, we'd fetch the last N logs from Loki/Kafka.
-	// For now, we'll send a signal to the AI service to evaluate system health.
+	// 1. Fetch real logs from Redis 'recent_logs'
+	rawLogs, err := h.redisClient.LRange(c.Request.Context(), "recent_logs", 0, 49).Result()
+	if err != nil {
+		h.logger.Error("Failed to fetch logs for AI analysis", "error", err)
+	}
+
+	logs := make([]models.LogEntry, 0)
+	for _, raw := range rawLogs {
+		var entry models.LogEntry
+		if err := json.Unmarshal([]byte(raw), &entry); err == nil {
+			logs = append(logs, entry)
+		}
+	}
+
 	batch := models.LogBatch{
 		BatchID:   "manual-audit-" + time.Now().Format("150405"),
 		Timestamp: time.Now(),
-		Logs:      []models.LogEntry{},
+		Logs:      logs,
 	}
 
 	result, err := h.aiClient.AnalyzeLogs(c.Request.Context(), batch)
@@ -82,7 +95,7 @@ func (h *Handler) ManualAnalysis(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
+		"status":   "success",
 		"analysis": result,
 	})
 }
