@@ -29,6 +29,7 @@ spec:
       containers:
       - name: collector
         image: acrlogpraveen99.azurecr.io/go-collector:latest
+        imagePullPolicy: Always
         # --- ADDITION 2: Mount the Volume into the Container ---
         volumeMounts:
         - name: kafka-certs-vol

@@ -27,6 +27,7 @@ spec:
       containers:
       - name: python-ai
         image: acrlogpraveen99.azurecr.io/python-ai:latest
+        imagePullPolicy: Always
         # --- ADDITION 2: Mount the Certificates folder ---
         volumeMounts:
         - name: kafka-certs-vol
