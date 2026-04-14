@@ -69,10 +69,19 @@ func main() {
 		l.Info("Connected to Redis Cache (Protected with TLS)")
 	}
 
-	// 5. Initialize	// UNIFIED DATABASE CONNECTION (Strictly DATABASE_URL)
-	dbURL := os.Getenv("DATABASE_URL")
+	// 5. Initialize	// UNIFIED DATABASE CONNECTION (Prioritizing Config DSN for stability)
+	dbURL := cfg.Database.DSN
+	if envURL := os.Getenv("DATABASE_URL"); envURL != "" && !strings.Contains(envURL, "PLACEHOLDER") {
+		dbURL = envURL
+	}
+
 	if dbURL == "" {
-		l.Error("CRITICAL: DATABASE_URL environment variable is missing.")
+		l.Error("CRITICAL: No database connection string found in config or environment.")
+	} else {
+		// Log the host we are targetting (sanitized)
+		if parts := strings.Split(dbURL, "@"); len(parts) > 1 {
+			l.Info("Targeting database host", "host", strings.Split(parts[1], "/")[0])
+		}
 	}
 
 	var pool *pgxpool.Pool

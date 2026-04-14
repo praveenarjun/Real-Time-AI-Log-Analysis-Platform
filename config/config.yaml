@@ -7,7 +7,7 @@ server:
   aiServicePort: 8000
 
 database:
-  dsn: "postgresql://postgres.ivljtbrvvhfrkauxxojn:raveen%2A4125@aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?sslmode=require"
+  dsn: "postgresql://postgres.ivljtbrvvhfrkauxxojn:raveen%2A4125@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require"
 
 kafka:
   brokers:
