@@ -2,8 +2,7 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
-		"net/http"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
