@@ -7,6 +7,10 @@ data:
   ENVIRONMENT: "dev"
   KAFKA_BROKER: "PLACEHOLDER_KAFKA_BROKER"
   KAFKA_TOPIC: "raw-logs"
+  KAFKA_TLS: "true"
+  KAFKA_CA_PATH: "/app/certs/ca.pem"
+  KAFKA_CERT_PATH: "/app/certs/service.cert"
+  KAFKA_KEY_PATH: "/app/certs/service.key"
   GRAFANA_URL: "REDACTED"
   UPSTASH_REDIS_URL: "REDACTED"
   # --- AI Configuration ---

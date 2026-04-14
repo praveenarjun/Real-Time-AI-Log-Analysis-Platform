@@ -84,6 +84,13 @@ func main() {
 			l.Warn("Self-healing: Detected Direct IPv6 host. Redirecting to IPv4 Pooler Tunnel...")
 			dbURL = strings.ReplaceAll(dbURL, "db.ivljtbrvvhfrkauxxojn.supabase.co", "aws-1-ap-northeast-2.pooler.supabase.com")
 			dbURL = strings.ReplaceAll(dbURL, ":5432", ":6543")
+			
+			// Supabase Pooler REQUIRES the project-id in the username (user.project-id)
+			if strings.Contains(dbURL, "user=postgres ") || strings.Contains(dbURL, "://postgres:") {
+				l.Warn("Self-healing: Injecting Project ID into Supabase Pooler username...")
+				dbURL = strings.ReplaceAll(dbURL, "user=postgres", "user=postgres.ivljtbrvvhfrkauxxojn")
+				dbURL = strings.ReplaceAll(dbURL, "://postgres:", "://postgres.ivljtbrvvhfrkauxxojn:")
+			}
 		}
 
 		// AUTO-FIX 2: Ensure password special characters are URL-encoded (especially the '*')
