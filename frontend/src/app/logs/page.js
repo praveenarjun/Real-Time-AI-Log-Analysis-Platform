@@ -145,7 +145,7 @@ export default function LogsPage() {
                     <div className="space-y-3 mb-4">
                        <span className="px-2 py-1 bg-status-error/20 text-status-error text-[8px] font-black rounded-lg uppercase tracking-widest border border-status-error/40">Anomaly Detected</span>
                        <p className="text-[10px] font-bold text-white/90 leading-relaxed italic">
-                         "{activeAnomaly.description || activeAnomaly.message}"
+                         &quot;{activeAnomaly.description || activeAnomaly.message}&quot;
                        </p>
                        <p className="text-[9px] font-medium text-text-secondary mt-1">
                          The AI is currently flagging logs matching this pattern in the stream to the right. 

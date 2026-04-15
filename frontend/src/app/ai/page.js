@@ -262,7 +262,7 @@ export default function AIForensicsStudio() {
                              Forensic Verdict
                           </div>
                           <div className="text-sm font-medium text-text-secondary leading-relaxed p-6 rounded-3xl bg-black/40 border border-white/5 italic">
-                             "{report.executive_summary}"
+                             &quot;{report.executive_summary}&quot;
                           </div>
                           <div className="space-y-3">
                              <div className="text-[10px] font-black text-white/40 uppercase tracking-[0.25em]">Root Cause Analysis</div>
