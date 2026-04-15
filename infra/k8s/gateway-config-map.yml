@@ -8,14 +8,14 @@ data:
     server:
       gatewayPort: 8080
     kafka:
-      brokers: ["forensic-kafka-ai-log-analyser.l.aivencloud.com:19800"]
+      brokers: ["PLACEHOLDER_KAFKA_BROKER"]
       tls: true
       ca_path: "/app/certs/ca.pem"
       cert_path: "/app/certs/service.cert"
       key_path: "/app/certs/service.key"
     database:
-      dsn: "postgresql://postgres.ivljtbrvvhfrkauxxojn:raveen*4125@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require"
+      dsn: "PLACEHOLDER_DATABASE_URL"
     redis:
-      url: "feasible-bedbug-40106.upstash.io:6379"
+      url: "PLACEHOLDER_REDIS_URL"
     logging:
       level: "info"

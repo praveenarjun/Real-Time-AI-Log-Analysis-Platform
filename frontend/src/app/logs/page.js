@@ -56,7 +56,14 @@ export default function LogsPage() {
     <div className="space-y-8 max-w-[1400px]">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
-          <h1 className="text-3xl font-black text-white tracking-tight uppercase">Forensic Logs</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-3xl font-black text-white tracking-tight uppercase">Forensic Logs</h1>
+            <div className={`px-2 py-0.5 rounded-full border text-[8px] font-black tracking-[0.2em] uppercase flex items-center gap-1.5 transition-all
+              ${wsStatus === 'connected' ? 'bg-status-success/10 border-status-success/40 text-status-success shadow-[0_0_10px_rgba(16,185,129,0.2)]' : 'bg-status-warn/10 border-status-warn/40 text-status-warn'}`}>
+               <div className={`w-1.5 h-1.5 rounded-full ${wsStatus === 'connected' ? 'bg-status-success animate-pulse' : 'bg-status-warn'}`} />
+               {wsStatus === 'connected' ? 'Live_Stream' : 'Connecting...'}
+            </div>
+          </div>
           <p className="text-text-secondary text-sm font-medium tracking-wide">
             Real-time telemetry and distributed system trace events.
           </p>

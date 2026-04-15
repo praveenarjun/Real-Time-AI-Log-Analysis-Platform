@@ -18,8 +18,10 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useForensic } from "../context/ForensicContext";
 
 export default function AIForensicsStudio() {
+  const { logs, activeAnomaly, activeReport: wsReport } = useForensic();
   const [analyzing, setAnalyzing] = useState(false);
   const [report, setReport] = useState(null);
   const [consoleLogs, setConsoleLogs] = useState([
@@ -76,35 +78,34 @@ export default function AIForensicsStudio() {
         });
         addLog("Report Analysis Complete. Briefing delivered to Intelligence Hub.");
       } else {
-        addLog(`AI Service returned status ${res.status}. Generating offline analysis...`);
-        // Fallback to a meaningful demo report
+        addLog(`AI Service returned status ${res.status}.`);
         setReport({
-          id: "RPT-OFFLINE-" + Date.now().toString(36).toUpperCase(),
-          title: "System Health Assessment (Offline Mode)",
-          executive_summary: "AI service is currently processing other requests. Based on cached telemetry data, all monitored services are operating within acceptable thresholds. No anomalies detected in the last observation window.",
-          root_cause: "No failures detected. The AI reasoning node is currently in a processing queue.",
+          id: "RPT-ERROR-" + Date.now().toString(36).toUpperCase(),
+          title: "Service Unavailable",
+          executive_summary: "The AI reasoning core is currently unreachable or processing other forensic requests. Please ensure the 'ai-service' and 'go-gateway' pods are healthy.",
+          root_cause: `Endpoint returned HTTP ${res.status}. This may indicate a temporary outage or configuration mismatch.`,
           recommendations: [
-            { task: "Ensure AI Service pods have adequate resources", priority: "MEDIUM" },
-            { task: "Check Kafka consumer lag for ai-service group", priority: "LOW" },
+            { task: "Check ai-service logs: kubectl logs -l app=ai-service", priority: "HIGH" },
+            { task: "Verify AZURE_OPENAI_API_KEY in K8s secrets", priority: "MEDIUM" },
           ],
-          confidence: 85.0
+          confidence: 0.0
         });
-        addLog("Offline analysis generated from cached state.");
+        addLog("Analysis failed. Displaying system diagnostic report.");
       }
     } catch (err) {
-      addLog(`Connection error: ${err.message}. Generating offline report...`);
+      addLog(`Communication error: ${err.message}.`);
       setReport({
-        id: "RPT-FALLBACK-001",
-        title: "Network Connectivity Assessment",
-        executive_summary: "Unable to reach the AI reasoning core. This typically indicates the AI service pod is restarting or the gRPC bridge is being re-established.",
-        root_cause: "AI Service endpoint unreachable. Check pod health and gRPC bridge status.",
+        id: "RPT-UNREACHABLE",
+        title: "Telemetry Discovery Failed",
+        executive_summary: "Unable to establish a secure link with the AI analysis cluster. Forensic audit aborted.",
+        root_cause: `The frontend cannot reach the backend API Gateway (${baseUrl}). Verify the service ingress and public IP.`,
         recommendations: [
-          { task: "Verify ai-service pods are running: kubectl get pods -n forensic-platform", priority: "HIGH" },
-          { task: "Check gRPC bridge logs in go-gateway", priority: "MEDIUM" },
+          { task: "Verify ingress.yml configuration for 'back.praveen-challa.tech'", priority: "HIGH" },
+          { task: "Ensure the local .env NEXT_PUBLIC_API_URL matches reality", priority: "MEDIUM" },
         ],
-        confidence: 70.0
+        confidence: 0.0
       });
-      addLog("Fallback report generated.");
+      addLog("Fallback diagnostic report generated.");
     } finally {
       setAnalyzing(false);
     }
@@ -281,19 +282,30 @@ export default function AIForensicsStudio() {
                  <div className="p-6 rounded-[2rem] bg-black/40 border border-white/5 space-y-4">
                     <div className="flex items-center gap-3">
                        <AlertTriangle className="w-5 h-5 text-status-warn" />
-                       <h4 className="text-[11px] font-black text-white uppercase tracking-widest">Root Cause Potential</h4>
+                       <h4 className="text-[11px] font-black text-white uppercase tracking-widest">Active Intelligence Feed</h4>
                     </div>
                     <p className="text-[11px] font-medium text-text-secondary leading-relaxed">
-                       Memory leak suspected in pod <span className="text-white font-black underline">auth-v2-4x9z</span>. Usage spike from 256MB to 1.4GB detected.
+                       {activeAnomaly ? (
+                         <>
+                           Live Anomaly Detected in <span className="text-white font-black underline">{activeAnomaly.service_name}</span>. 
+                           Forensic match: <span className="text-status-warn">{activeAnomaly.message.substring(0, 100)}...</span>
+                         </>
+                       ) : report ? (
+                         <>
+                           Analysis result for report <span className="text-white font-black">{report.id}</span> is now active in reasoning core.
+                         </>
+                       ) : (
+                         "Awaiting tactical directives. Monitoring distributed telemetry mesh for anomalies..."
+                       )}
                     </p>
                  </div>
 
                  <div className="space-y-4">
-                    <div className="text-[10px] font-black text-white/30 tracking-[0.3em] uppercase mb-4">Model Performance</div>
+                    <div className="text-[10px] font-black text-white/30 tracking-[0.3em] uppercase mb-4">Live Telemetry</div>
                     {[
-                      { label: "Tokens / Sec", value: "124", color: "cyan" },
+                      { label: "Active Logs", value: `${logs.length}`, color: "cyan" },
                       { label: "Context Window", value: "128k", color: "fuchsia" },
-                      { label: "Reasoning Time", value: "1.2s", color: "blue" },
+                      { label: "Reasoning Time", value: analyzing ? "Running..." : "1.2s", color: "blue" },
                     ].map((stat, i) => (
                       <div key={i} className="flex justify-between items-center p-4 border border-white/5 rounded-2xl bg-white/[0.02]">
                          <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">{stat.label}</span>
@@ -307,17 +319,17 @@ export default function AIForensicsStudio() {
            <GlassCard title="Active Agents">
               <div className="space-y-6">
                  {[
-                   { name: "REASONER-NODE", status: "Active", risk: "Low" },
-                   { name: "PATTERN-BRAIN", status: "Processing", risk: "Medium" },
-                   { name: "TACTICAL-GO", status: "Idle", risk: "Low" },
+                   { name: "REASONER-NODE", status: analyzing ? "Analyzing..." : "Idle", risk: logs.length > 50 ? "High" : "Low" },
+                   { name: "PATTERN-BRAIN", status: wsStatus === "connected" ? "Live" : "Standby", risk: "Low" },
+                   { name: "TACTICAL-GO", status: "Active", risk: "Low" },
                  ].map((node, i) => (
                     <div key={i} className="flex items-center justify-between group">
                        <div className="space-y-1">
                           <div className="text-[10px] font-black text-white uppercase tracking-tight group-hover:text-accent-fuchsia transition-colors">{node.name}</div>
                           <div className="text-[8px] font-bold text-white/20 uppercase tracking-widest">{node.status}</div>
                        </div>
-                       <div className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${node.risk === 'Medium' ? 'border-status-warn/20 text-status-warn bg-status-warn/5' : 'border-white/5 text-white/30'}`}>
-                          Risk_{node.risk}
+                       <div className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest border ${node.risk === 'High' ? 'border-status-error/20 text-status-error bg-status-error/5' : 'border-white/5 text-white/30'}`}>
+                          {node.risk === 'High' ? 'Risk_Critical' : `Risk_${node.risk}`}
                        </div>
                     </div>
                  ))}

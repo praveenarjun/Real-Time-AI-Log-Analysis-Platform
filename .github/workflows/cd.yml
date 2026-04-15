@@ -58,6 +58,16 @@ jobs:
           docker push $REGISTRY/python-ai:$SHA
           docker push $REGISTRY/python-ai:latest
 
+          # Build and push Log Simulator
+          docker build -t $REGISTRY/log-simulator:$SHA -t $REGISTRY/log-simulator:latest ./log-simulator
+          docker push $REGISTRY/log-simulator:$SHA
+          docker push $REGISTRY/log-simulator:latest
+
+          # Build and push Alerter
+          docker build -t $REGISTRY/go-alerter:$SHA -t $REGISTRY/go-alerter:latest -f alerting/Dockerfile .
+          docker push $REGISTRY/go-alerter:$SHA
+          docker push $REGISTRY/go-alerter:latest
+
   deploy-staging:
     name: Deploy to Staging
     needs: build-and-push
@@ -90,6 +100,8 @@ jobs:
           sed -i "s|image: .*/go-gateway:.*|image: $REGISTRY/go-gateway:$SHA|g" infra/k8s/go-gateway-deployment.yml
           sed -i "s|image: .*/go-collector:.*|image: $REGISTRY/go-collector:$SHA|g" infra/k8s/go-collector-deployment.yml
           sed -i "s|image: .*/python-ai:.*|image: $REGISTRY/python-ai:$SHA|g" infra/k8s/ai-service-deployment.yml
+          sed -i "s|image: .*/log-simulator:.*|image: $REGISTRY/log-simulator:$SHA|g" infra/k8s/log-simulator-deployment.yml
+          sed -i "s|image: .*/go-alerter:.*|image: $REGISTRY/go-alerter:$SHA|g" infra/k8s/go-alerter-deployment.yml
           
           kubectl apply -f infra/k8s/ --validate=false
           kubectl rollout status deployment go-gateway -n forensic-platform

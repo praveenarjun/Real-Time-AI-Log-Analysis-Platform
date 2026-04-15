@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-simulator
+  namespace: forensic-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-simulator
+  template:
+    metadata:
+      labels:
+        app: log-simulator
+    spec:
+      containers:
+      - name: log-simulator
+        image: acrlogpraveen99.azurecr.io/log-simulator:latest
+        env:
+        - name: COLLECTOR_URL
+          value: "http://go-gateway.forensic-platform.svc.cluster.local/api/v1/ingest/batch"
+        - name: LOG_RATE
+          value: "2"
+        - name: ANOMALY_INTERVAL
+          value: "45"
+        resources:
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"

@@ -282,12 +282,18 @@ class LogAnalysisSupervisor:
             if recent_logs and isinstance(recent_logs[0], dict):
                 msg = str(recent_logs[0].get("message", "")).lower()
 
+            rc = "Telemetry Pattern Disturbance"
+            recent_logs = state.get("log_entries", [])
+            msg = ""
+            if recent_logs and isinstance(recent_logs[0], dict):
+                msg = str(recent_logs[0].get("message", "")).lower()
+
             if "connection" in msg or "database" in msg:
-                rc = "Database Connection Pool Exhaustion"
+                rc = "Inferred Connectivity or Database Issue"
             elif "timeout" in msg:
-                rc = "Service Timeout or Upstream Latency Chain"
+                rc = "Inferred Latency or Timeout Event"
             elif "auth" in msg or "permission" in msg:
-                rc = "Authentication or Permission Denied"
+                rc = "Inferred Authentication/Authorization Issue"
 
             return {
                 "root_cause": rc + " (Local Discovery)",
@@ -312,7 +318,7 @@ class LogAnalysisSupervisor:
             logger.warning("CIRCUIT BREAKER: Skipping AI Predictor.")
             return {
                 "risk_score": 0.5,
-                "predictions": ["Baseline Risk Assessed (AI Offline)"],
+                "predictions": ["System stability assessed via local heuristics (AI Offline)"],
                 "ai_circuit_broken": True,
             }
 
@@ -332,7 +338,7 @@ class LogAnalysisSupervisor:
                 )
                 return {
                     "risk_score": 0.7,
-                    "predictions": ["High Volatility Predicted"],
+                    "predictions": ["Telemetry variance detected; manual review recommended"],
                     "ai_circuit_broken": True,
                 }
 
@@ -358,7 +364,7 @@ class LogAnalysisSupervisor:
             logger.warning("CIRCUIT BREAKER: Skipping AI Reporter.")
             return {
                 "incident_report": {
-                    "summary": "RECOVERY MODE: System stability being restored (Local Analysis)"
+                    "summary": "Forensic Insight: System monitoring reveals elevated log activity. AI reasoning core is currently in failover mode."
                 },
                 "ai_circuit_broken": True,
             }

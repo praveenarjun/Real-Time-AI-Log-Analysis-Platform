@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: alerter
-        image: acrlogpraveen99.azurecr.io/alerting:latest
+        image: acrlogpraveen99.azurecr.io/go-alerter:latest
         resources:
           requests:
             cpu: "100m"
@@ -27,7 +27,9 @@ spec:
         - configMapRef:
             name: log-analyzer-config
         - secretRef:
-            name: log-analyzer-secrets
+            name: forensic-secrets
+        ports:
+        - containerPort: 8080
 ---
 apiVersion: v1
 kind: Service
