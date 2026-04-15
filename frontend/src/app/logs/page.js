@@ -17,7 +17,7 @@ import {
 import { motion } from "framer-motion";
 
 export default function LogsPage() {
-  const { logs: realtimeLogs, wsStatus } = useForensic();
+  const { logs: realtimeLogs, wsStatus, activeAnomaly, activeReport } = useForensic();
   const [historicalLogs, setHistoricalLogs] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterLevel, setFilterLevel] = useState("ALL");
@@ -132,7 +132,39 @@ export default function LogsPage() {
                 Currently monitoring all nodes with real-time ingestion enabled. No restrictive proxies applied.
               </p>
            </GlassCard>
+
+           {/* --- NEW: AI Context Panel --- */}
+           {(activeAnomaly || activeReport) && (
+              <GlassCard className="bg-gradient-to-br from-status-error/10 to-transparent border-status-error/30 animate-pulse-slow">
+                 <div className="flex items-center gap-3 mb-4">
+                    <div className="w-2 h-2 rounded-full bg-status-error animate-ping" />
+                    <h3 className="text-[10px] font-black text-white uppercase tracking-widest">AI Context Active</h3>
+                 </div>
+                 
+                 {activeAnomaly && (
+                    <div className="space-y-3 mb-4">
+                       <span className="px-2 py-1 bg-status-error/20 text-status-error text-[8px] font-black rounded-lg uppercase tracking-widest border border-status-error/40">Anomaly Detected</span>
+                       <p className="text-[10px] font-bold text-white/90 leading-relaxed italic">
+                         "{activeAnomaly.description || activeAnomaly.message}"
+                       </p>
+                       <p className="text-[9px] font-medium text-text-secondary mt-1">
+                         The AI is currently flagging logs matching this pattern in the stream to the right. 
+                       </p>
+                    </div>
+                 )}
+
+                 {activeReport && (
+                    <div className="space-y-3 border-t border-white/10 pt-4">
+                       <h4 className="text-[9px] font-black text-white/50 uppercase tracking-widest">Live Root Cause</h4>
+                       <p className="text-[11px] font-bold text-status-warn leading-relaxed">
+                          {activeReport.root_cause || activeReport.root_cause_analysis}
+                       </p>
+                    </div>
+                 )}
+              </GlassCard>
+           )}
         </div>
+
 
         {/* Main Log View */}
         <div className="lg:col-span-3">

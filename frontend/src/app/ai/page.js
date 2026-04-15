@@ -43,6 +43,25 @@ export default function AIForensicsStudio() {
     setConsoleLogs(prev => [...prev.slice(-15), `> ${msg}`]);
   };
 
+  // --- NEW: React to Live Streaming Analytics ---
+  useEffect(() => {
+    if (wsReport) {
+      setReport({
+        id: wsReport.id || wsReport.forensic_id || `RPT-FORENSIC-${Date.now().toString(36).toUpperCase()}`,
+        title: wsReport.title || "Live Anomaly Analyzed",
+        executive_summary: wsReport.executive_summary || wsReport.summary || "System anomaly detected and analyzed in real-time.",
+        root_cause: wsReport.root_cause_analysis || wsReport.root_cause || "Pending root cause...",
+        recommendations: wsReport.action_items || [
+           { task: "Awaiting specific action items from AI core", priority: "WATCH" }
+        ],
+        confidence: wsReport.risk_score ? Math.max(0, 100 - wsReport.risk_score) : 92.4,
+        severity: wsReport.severity || "HIGH"
+      });
+      addLog(`🚨 New Incident Report Synced from AI Mesh: ${wsReport.title || "Anomaly"}`);
+    }
+  }, [wsReport]);
+
+
   const handleGenerateReport = async () => {
     setAnalyzing(true);
     setReport(null);
@@ -229,8 +248,10 @@ export default function AIForensicsStudio() {
                           </div>
                        </div>
                        <div className="p-6 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-end justify-center min-w-[160px]">
-                          <div className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Risk Score</div>
-                          <div className="text-4xl font-black text-white tabular-nums">94%</div>
+                          <div className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Impact Severity</div>
+                          <div className={`text-4xl font-black tabular-nums ${report.severity === 'CRITICAL' ? 'text-status-error animate-pulse' : 'text-status-warn'}`}>
+                             {report.severity || "HIGH"}
+                          </div>
                        </div>
                     </div>
 
