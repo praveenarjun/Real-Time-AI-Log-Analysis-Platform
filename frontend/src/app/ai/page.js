@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import React, { useState, useEffect, useRef } from "react";
 import GlassCard from "../components/GlassCard";
 import { 
@@ -71,7 +73,7 @@ export default function AIForensicsStudio() {
 
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://back.praveen-challa.tech";
-      const res = await fetch(`${baseUrl}/api/v1/ai/manual-analysis`, {
+      const res = await fetch(`${baseUrl}/api/v1/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ from: new Date(Date.now() - 3600000).toISOString(), to: new Date().toISOString() }),
