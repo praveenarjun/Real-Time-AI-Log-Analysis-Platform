@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useForensic } from "../context/ForensicContext";
 
 export default function AIForensicsStudio() {
-  const { logs, activeAnomaly, activeReport: wsReport } = useForensic();
+  const { logs, activeAnomaly, activeReport: wsReport, wsStatus } = useForensic();
   const [analyzing, setAnalyzing] = useState(false);
   const [report, setReport] = useState(null);
   const [consoleLogs, setConsoleLogs] = useState([
