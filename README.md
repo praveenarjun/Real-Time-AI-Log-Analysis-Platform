@@ -58,6 +58,24 @@ Every technology in this project was selected for enterprise-grade scalability a
 
 ---
 
+## 🏆 Engineering Challenges & Architectural Solutions
+
+Building a distributed telemetry platform requires solving severe engineering bottlenecks. Here is how we overcame them:
+
+### 1. Cost Prohibitive Infrastructure (The Spot Instance Solution)
+- **Problem:** Running 6 microservices continuously on dedicated AKS nodes was financially unfeasible for the startup lifecycle.
+- **Solution:** We explicitly designed the `python-ai-service` and `go-collector` to be entirely stateless and idempotent. This allowed us to deploy almost all workloads exclusively onto **Azure Spot Instances**, instantly driving compute costs down by 70%. If Azure preempts a Spot node, the **Kafka broker** retains the current consumer offset perfectly, meaning zero logs are lost while the AKS Horizontal Pod Autoscaler spins up a replacement pod in seconds.
+
+### 2. High-Volume API Exhaustion (The Gateway Cache)
+- **Problem:** The Next.js frontend was aggressively polling the backend during high-anomaly events, creating dangerous load spikes and running out of database connections.
+- **Solution:** We heavily fortified the `go-gateway` by integrating **Redis**. Every incoming UI REST request is now routed through a Redis token-bucket rate limiter. Furthermore, we replaced REST polling entirely with persistent **WebSockets**, allowing the Gateway to push AI updates at near-zero incremental cost without thrashing the Supabase connection pool.
+
+### 3. LLM API Rate Throttling (The Fallback Heuristic)
+- **Problem:** Passing 10,000+ logs per second through Azure OpenAI directly results in catastrophic API Rate Limit (429) errors and astronomical costs.
+- **Solution:** We introduced the LangChain LangGraph orchestrator. Instead of sending raw logs, the `go-collector` generates aggregated batch summaries. The Python AI relies on a **Detector Agent** that specifically filters out benign noise *before* invoking expensive LLM calls. If the 429 threshold is hit, the system elegantly downgrades to a local Regex-based fallback heuristic to maintain baseline alerting until quotas reset.
+
+---
+
 ## 🚀 Quick Launch (Forensic Readiness)
 
 ### 1. Environment Synchronization
