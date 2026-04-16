@@ -204,7 +204,7 @@ class AnalyzerAgent:
 
         context = {
             "detected_anomalies": anomalies,
-            "recent_logs": log_entries[:10],  # Representative slice
+            "recent_logs": log_entries[:50],  # Expanded context for better forensics
         }
 
         messages = [
@@ -219,8 +219,8 @@ class AnalyzerAgent:
             ai_msg = self.llm_with_tools.invoke(messages)
             messages.append(ai_msg)
 
-            # 2. Iterative Tool Loop (Max 5 investigations)
-            for i in range(5):
+            # 2. Iterative Tool Loop (Reduced from 5 to 2 for production stability)
+            for i in range(2):
                 if not ai_msg.tool_calls:
                     break
 
