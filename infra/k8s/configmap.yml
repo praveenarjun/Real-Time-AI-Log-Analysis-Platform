@@ -5,7 +5,7 @@ metadata:
   namespace: forensic-platform
 data:
   ENVIRONMENT: "dev"
-  KAFKA_BROKER: "PLACEHOLDER_KAFKA_BROKER"
+  KAFKA_BROKERS: "PLACEHOLDER_KAFKA_BROKER"
   KAFKA_TOPIC: "raw-logs"
   KAFKA_TLS: "true"
   KAFKA_CA_PATH: "/app/certs/ca.pem"
