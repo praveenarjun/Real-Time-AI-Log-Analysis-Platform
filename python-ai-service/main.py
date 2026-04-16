@@ -174,7 +174,7 @@ async def chat_endpoint(websocket: WebSocket):
 
     try:
         while True:
-            data = await websocket.receive_text()
+            user_query = await websocket.receive_text()
             
             # 1. Use existing LATEST_ANALYSIS as context
             context_brief = "No recent anomalies detected."
@@ -183,7 +183,7 @@ async def chat_endpoint(websocket: WebSocket):
                 context_brief = f"Latest Incident: {report.get('summary', 'Unknown Anomaly')}. Severity: {LATEST_ANALYSIS.get('anomaly_severity')}."
 
             await websocket.send_json(
-                {"type": "chunk", "content": f"Syncing with Intelligence Mesh... Done.\nContext: {context_brief}\nThinking..."}
+                {"type": "chunk", "content": f"Syncing Intelligence for query: '{user_query}'... Done.\nContext: {context_brief}\nThinking..."}
             )
             
             # 2. Simple logic for now: respond with the latest root cause or prediction
