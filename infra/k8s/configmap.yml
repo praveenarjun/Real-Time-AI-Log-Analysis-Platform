@@ -6,9 +6,9 @@ metadata:
 data:
   ENVIRONMENT: "dev"
   KAFKA_BROKERS: "PLACEHOLDER_KAFKA_BROKER"
-  KAFKA_TOPIC_RAW: "forensic.logs.raw"
-  KAFKA_TOPIC_ANOMALIES: "forensic.anomalies"
-  KAFKA_TOPIC_REPORTS: "forensic.incidents"
+  KAFKA_TOPIC_RAW: "raw-logs"
+  KAFKA_TOPIC_ANOMALIES: "anomalies"
+  KAFKA_TOPIC_REPORTS: "incident-reports"
   KAFKA_TLS: "true"
   KAFKA_CA_PATH: "/app/certs/ca.pem"
   KAFKA_CERT_PATH: "/app/certs/service.cert"
