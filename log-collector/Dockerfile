@@ -38,6 +38,10 @@ RUN apk --no-cache add ca-certificates curl
 # Copy binary from builder
 COPY --from=builder /app/main .
 
+# Copy config directory for base schema
+COPY --from=builder /app/config ./config
+
+
 # Ensure correct permissions
 RUN chown -R appuser:appgroup /home/appuser
 

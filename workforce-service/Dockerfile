@@ -28,7 +28,8 @@ WORKDIR /app
 
 # Copy the binary from the build stage
 COPY --from=builder /app/workforce-bin .
-COPY --from=builder /app/config/config.yaml ./config.yaml
+COPY --from=builder /app/config ./config
+
 
 # Minimal operational setup
 RUN apk add --no-cache ca-certificates
