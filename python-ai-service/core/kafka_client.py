@@ -6,6 +6,7 @@ import ssl  # --- Added for Aiven SSL ---
 
 from typing import AsyncGenerator, List, Dict, Any
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
+from core.config import settings
 
 logger = logging.getLogger("ai-service.kafka")
 
@@ -152,10 +153,10 @@ class ResultKafkaProducer:
             logger.error(f"Failed to send message to {topic}: {e}")
 
     async def send_anomaly(self, anomaly: Dict[str, Any]):
-        await self.send("anomalies", anomaly, key=anomaly.get("id"))
+        await self.send(settings.KAFKA_TOPIC_ANOMALIES, anomaly, key=anomaly.get("id"))
 
     async def send_alert(self, alert: Dict[str, Any]):
-        await self.send("alerts", alert, key=alert.get("id"))
+        await self.send(settings.KAFKA_TOPIC_ALERTS, alert, key=alert.get("id"))
 
     async def send_report(self, report: Dict[str, Any]):
-        await self.send("incident-reports", report, key=report.get("id"))
+        await self.send(settings.KAFKA_TOPIC_REPORTS, report, key=report.get("id"))

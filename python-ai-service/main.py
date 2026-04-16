@@ -28,8 +28,10 @@ ANALYSIS_TIME = Histogram(
 supervisor = LogAnalysisSupervisor()
 kafka_producer = ResultKafkaProducer(settings.get_kafka_brokers())
 kafka_consumer = LogKafkaConsumer(
-    settings.get_kafka_brokers(), "raw-logs", "ai-service-group"
+    settings.get_kafka_brokers(), settings.KAFKA_TOPIC_RAW, "ai-service-group"
 )
+
+LATEST_ANALYSIS: Dict[str, Any] = {}
 
 
 # --- Background Forensics Loop ---
@@ -48,7 +50,7 @@ async def consume_logs_background():
 
                 # 1. Run Analysis
                 logger.info(
-                    f"Processing batch of {len(batch)} logs from Kafka topic 'raw-logs'..."
+                    f"Processing batch of {len(batch)} logs from Kafka topic '{settings.KAFKA_TOPIC_RAW}'..."
                 )
                 result = supervisor.run(log_batch)
 
@@ -89,6 +91,10 @@ async def consume_logs_background():
                                 "timestamp": str(datetime.now().isoformat()),
                             }
                         )
+
+                # Store globally for Chat Assistant context
+                global LATEST_ANALYSIS
+                LATEST_ANALYSIS = result
 
                 LOGS_PROCESSED.labels(status="success").inc(len(batch))
     except Exception as e:
@@ -169,15 +175,28 @@ async def chat_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_text()
-            # Simple simulation of streaming AI chat
+            
+            # 1. Use existing LATEST_ANALYSIS as context
+            context_brief = "No recent anomalies detected."
+            if LATEST_ANALYSIS.get("anomalies_detected"):
+                report = LATEST_ANALYSIS.get("incident_report", {})
+                context_brief = f"Latest Incident: {report.get('summary', 'Unknown Anomaly')}. Severity: {LATEST_ANALYSIS.get('anomaly_severity')}."
+
             await websocket.send_json(
-                {"type": "chunk", "content": f"Analyzing patterns for: {data}..."}
+                {"type": "chunk", "content": f"Syncing with Intelligence Mesh... Done.\nContext: {context_brief}\nThinking..."}
             )
+            
+            # 2. Simple logic for now: respond with the latest root cause or prediction
+            response = "I'm monitoring the logs. No critical issues found in the current buffer."
+            if LATEST_ANALYSIS.get("anomalies_detected"):
+                rc = LATEST_ANALYSIS.get("root_cause", "investigating...")
+                response = f"Based on the latest telemetry, I've identified a potential root cause: {rc}. I recommend checking the {', '.join(LATEST_ANALYSIS.get('affected_services', ['related']))} services."
+
             await asyncio.sleep(0.5)
             await websocket.send_json(
                 {
                     "type": "done",
-                    "content": "I've analyzed the logs. It looks like a connection timeout in the user-db.",
+                    "content": response,
                 }
             )
     except WebSocketDisconnect:

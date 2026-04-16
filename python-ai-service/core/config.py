@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     ANOMALY_ERROR_RATE_THRESHOLD: float = 0.05
     ANOMALY_SPIKE_MULTIPLIER: float = 3.0
     ALERT_COOLDOWN_SECONDS: int = 300
+    # Kafka Topics (Configurable via Environment Variables)
+    KAFKA_TOPIC_RAW: str = "raw-logs"
+    KAFKA_TOPIC_ANOMALIES: str = "anomalies"
+    KAFKA_TOPIC_ALERTS: str = "alerts"
+    KAFKA_TOPIC_REPORTS: str = "incident-reports"
+
     BATCH_PROCESS_SIZE: int = 100
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
