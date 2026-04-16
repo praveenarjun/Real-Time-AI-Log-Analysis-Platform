@@ -6,7 +6,8 @@ metadata:
   labels:
     app: go-collector
 spec:
-  replicas: 2
+spec:
+  replicas: 1
   selector:
     matchLabels:
       app: go-collector

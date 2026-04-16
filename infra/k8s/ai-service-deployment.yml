@@ -4,7 +4,8 @@ metadata:
   name: ai-service
   namespace: forensic-platform
 spec:
-  replicas: 2
+spec:
+  replicas: 1
   selector:
     matchLabels:
       app: ai-service
