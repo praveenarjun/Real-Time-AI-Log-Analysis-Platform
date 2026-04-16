@@ -280,7 +280,7 @@ export default function AIForensicsStudio() {
                              Tactical Remediation
                           </div>
                           <div className="space-y-3">
-                             {report.recommendations.map((item, idx) => (
+                             {(Array.isArray(report.recommendations) ? report.recommendations : []).map((item, idx) => (
                                <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 group hover:bg-white/10 transition-all cursor-pointer">
                                   <div className="flex items-center gap-4">
                                      <div className={`w-1.5 h-1.5 rounded-full ${item.priority === 'CRITICAL' ? 'bg-status-error shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 'bg-status-success'}`} />
