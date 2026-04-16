@@ -10,7 +10,8 @@ metadata:
 spec:
   tls:
   - hosts:
-    - dashboard.yourdomain.com
+    - dashboard.praveen-challa.tech
+    - back.praveen-challa.tech
     secretName: tls-secret
   rules:
   - host: back.praveen-challa.tech
@@ -30,6 +31,9 @@ spec:
             name: go-gateway
             port:
               number: 80
+  - host: dashboard.praveen-challa.tech
+    http:
+      paths:
       - path: /
         pathType: Prefix
         backend:

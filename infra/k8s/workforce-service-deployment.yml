@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workforce-service
+  namespace: forensic-platform
+  labels:
+    app: workforce-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workforce-service
+  template:
+    metadata:
+      labels:
+        app: workforce-service
+    spec:
+      containers:
+      - name: workforce-service
+        image: acrlogpraveen99.azurecr.io/workforce-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8082
+        envFrom:
+        - secretRef:
+            name: forensic-secrets
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workforce-service
+  namespace: forensic-platform
+spec:
+  selector:
+    app: workforce-service
+  ports:
+  - protocol: TCP
+    port: 8082
+    targetPort: 8082

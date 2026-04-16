@@ -68,6 +68,16 @@ jobs:
           docker push $REGISTRY/go-alerter:$SHA
           docker push $REGISTRY/go-alerter:latest
 
+          # Build and push Frontend
+          docker build -t $REGISTRY/frontend:$SHA -t $REGISTRY/frontend:latest -f frontend/Dockerfile .
+          docker push $REGISTRY/frontend:$SHA
+          docker push $REGISTRY/frontend:latest
+
+          # Build and push Workforce Service
+          docker build -t $REGISTRY/workforce-service:$SHA -t $REGISTRY/workforce-service:latest -f workforce-service/Dockerfile .
+          docker push $REGISTRY/workforce-service:$SHA
+          docker push $REGISTRY/workforce-service:latest
+
   deploy-staging:
     name: Deploy to Staging
     needs: build-and-push
@@ -102,11 +112,15 @@ jobs:
           sed -i "s|image: .*/python-ai:.*|image: $REGISTRY/python-ai:$SHA|g" infra/k8s/ai-service-deployment.yml
           sed -i "s|image: .*/log-simulator:.*|image: $REGISTRY/log-simulator:$SHA|g" infra/k8s/log-simulator-deployment.yml
           sed -i "s|image: .*/go-alerter:.*|image: $REGISTRY/go-alerter:$SHA|g" infra/k8s/go-alerter-deployment.yml
+          sed -i "s|image: .*/frontend:.*|image: $REGISTRY/frontend:$SHA|g" infra/k8s/frontend-deployment.yml
+          sed -i "s|image: .*/workforce-service:.*|image: $REGISTRY/workforce-service:$SHA|g" infra/k8s/workforce-service-deployment.yml
           
           kubectl apply -f infra/k8s/ --validate=false
           kubectl rollout status deployment go-gateway -n forensic-platform
           kubectl rollout status deployment go-collector -n forensic-platform
           kubectl rollout status deployment ai-service -n forensic-platform
+          kubectl rollout status deployment frontend -n forensic-platform
+          kubectl rollout status deployment workforce-service -n forensic-platform
 
   deploy-production:
     name: Deploy to Production
