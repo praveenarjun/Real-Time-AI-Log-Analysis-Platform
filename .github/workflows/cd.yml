@@ -69,7 +69,7 @@ jobs:
           docker push $REGISTRY/go-alerter:latest
 
           # Build and push Frontend
-          docker build -t $REGISTRY/frontend:$SHA -t $REGISTRY/frontend:latest -f frontend/Dockerfile .
+          docker build -t $REGISTRY/frontend:$SHA -t $REGISTRY/frontend:latest -f frontend/Dockerfile ./frontend
           docker push $REGISTRY/frontend:$SHA
           docker push $REGISTRY/frontend:latest
 
