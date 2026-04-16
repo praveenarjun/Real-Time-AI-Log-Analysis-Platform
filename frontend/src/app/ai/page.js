@@ -27,9 +27,8 @@ export default function AIForensicsStudio() {
   const [analyzing, setAnalyzing] = useState(false);
   const [report, setReport] = useState(null);
   const [consoleLogs, setConsoleLogs] = useState([
-    "Initializing Forensic Reasoning Node [v2.4]...",
-    "Connected to Distributed Telemetry Mesh.",
-    "Awaiting tactical directives..."
+    "Forensic Reasoning Node v2.5 started.",
+    "Awaiting tactical directives from the telemetry mesh..."
   ]);
   const consoleEndRef = useRef(null);
 
@@ -59,7 +58,7 @@ export default function AIForensicsStudio() {
         confidence: wsReport.risk_score ? Math.max(0, 100 - wsReport.risk_score) : 92.4,
         severity: wsReport.severity || "HIGH"
       });
-      addLog(`🚨 New Incident Report Synced from AI Mesh: ${wsReport.title || "Anomaly"}`);
+      addLog(`🚨 Live Incident Analyzed: ${wsReport.title || "Unknown Anomaly"}`);
     }
   }, [wsReport]);
 
@@ -88,14 +87,13 @@ export default function AIForensicsStudio() {
         const analysis = data.analysis || data.result || {};
         setReport({
           id: analysis.id || `RPT-FORENSIC-${Date.now().toString(36).toUpperCase()}`,
-          title: analysis.title || analysis.type || "AI Forensic Analysis Complete",
-          executive_summary: analysis.executive_summary || analysis.description || analysis.summary || "AI analysis completed. No critical anomalies detected in the current observation window.",
-          root_cause: analysis.root_cause || analysis.rootCause || "No critical root cause identified. System operating within normal parameters.",
+          title: analysis.title || analysis.type || "Forensic Analysis Active",
+          executive_summary: analysis.executive_summary || analysis.description || analysis.summary || "No anomalies detected in the current telemetry window.",
+          root_cause: analysis.root_cause || analysis.rootCause || "System operating within normal parameters. No root cause identified.",
           recommendations: analysis.recommendations || [
             { task: "Continue monitoring ingestion pipeline", priority: "LOW" },
-            { task: "Review Kafka consumer lag metrics", priority: "MEDIUM" },
           ],
-          confidence: analysis.confidence || 94.2
+          confidence: analysis.confidence || 100.0
         });
         addLog("Report Analysis Complete. Briefing delivered to Intelligence Hub.");
       } else {

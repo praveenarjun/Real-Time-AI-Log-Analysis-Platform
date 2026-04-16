@@ -125,12 +125,22 @@ export default function LogsPage() {
 
            <GlassCard className="bg-accent-cyan/5 border-accent-cyan/20">
               <div className="flex items-center gap-3 mb-4">
-                 <Filter className="w-4 h-4 text-accent-cyan" />
-                 <h3 className="text-[10px] font-black text-white uppercase tracking-widest">Active Filters</h3>
+                 <Terminal className="w-4 h-4 text-accent-cyan" />
+                 <h3 className="text-[10px] font-black text-white uppercase tracking-widest">Stream Statistics</h3>
               </div>
-              <p className="text-[10px] text-text-secondary font-medium italic leading-relaxed">
-                Currently monitoring all nodes with real-time ingestion enabled. No restrictive proxies applied.
-              </p>
+              <div className="space-y-4">
+                 <div className="flex justify-between items-center bg-black/20 p-4 rounded-xl border border-white/5">
+                    <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Live Buffer</span>
+                    <span className="mono-data text-xs font-black text-accent-cyan">{realtimeLogs.length}</span>
+                 </div>
+                 <div className="flex justify-between items-center bg-black/20 p-4 rounded-xl border border-white/5">
+                    <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">Filtered Result</span>
+                    <span className="mono-data text-xs font-black text-white">{filteredLogs.length}</span>
+                 </div>
+                 <p className="text-[9px] text-text-secondary font-medium italic leading-relaxed pt-2">
+                   Direct connection to the Kafka Mesh established via API Gateway WebSocket Bridge.
+                 </p>
+              </div>
            </GlassCard>
 
            {/* --- NEW: AI Context Panel --- */}

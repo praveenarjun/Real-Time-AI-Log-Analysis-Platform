@@ -125,6 +125,15 @@ func overrideWithEnv(cfg *Config) {
 	if v := os.Getenv("KAFKA_KEY_PATH"); v != "" {
 		cfg.Kafka.KeyPath = v
 	}
+	if v := os.Getenv("KAFKA_TOPIC_RAW"); v != "" {
+		cfg.Kafka.Topics.RawLogs = v
+	}
+	if v := os.Getenv("KAFKA_TOPIC_ANOMALIES"); v != "" {
+		cfg.Kafka.Topics.Anomalies = v
+	}
+	if v := os.Getenv("KAFKA_TOPIC_REPORTS"); v != "" {
+		cfg.Kafka.Topics.IncidentReports = v
+	}
 	if v := os.Getenv("REDIS_URL"); v != "" {
 		cfg.Redis.URL = v
 	} else if v := os.Getenv("UPSTASH_REDIS_URL"); v != "" {
