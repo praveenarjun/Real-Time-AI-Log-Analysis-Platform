@@ -10,6 +10,8 @@ spec:
   selector:
     matchLabels:
       app: workforce-service
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -40,11 +42,11 @@ spec:
           periodSeconds: 10
         resources:
           requests:
-            cpu: 100m
-            memory: 128Mi
+            cpu: 20m
+            memory: 64Mi
           limits:
-            cpu: 500m
-            memory: 512Mi
+            cpu: 200m
+            memory: 256Mi
 ---
 apiVersion: v1
 kind: Service

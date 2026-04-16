@@ -10,6 +10,8 @@ spec:
   selector:
     matchLabels:
       app: frontend
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -28,11 +30,11 @@ spec:
           value: "wss://back.praveen-challa.tech/api/v1/ws/stream"
         resources:
           requests:
-            cpu: 100m
-            memory: 128Mi
+            cpu: 50m
+            memory: 64Mi
           limits:
-            cpu: 500m
-            memory: 512Mi
+            cpu: 200m
+            memory: 256Mi
 ---
 apiVersion: v1
 kind: Service

@@ -8,6 +8,8 @@ spec:
   selector:
     matchLabels:
       app: ai-service
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -36,11 +38,11 @@ spec:
         # -------------------------------------------------
         resources:
           requests:
-            cpu: "100m"
-            memory: "256Mi"
+            cpu: "50m"
+            memory: "128Mi"
           limits:
             cpu: "500m"
-            memory: "1Gi"
+            memory: "512Mi"
         envFrom:
         - configMapRef:
             name: log-analyzer-config
@@ -84,8 +86,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: ai-service
-  minReplicas: 2
-  maxReplicas: 10
+  minReplicas: 1
+  maxReplicas: 5
   metrics:
   - type: Resource
     resource:

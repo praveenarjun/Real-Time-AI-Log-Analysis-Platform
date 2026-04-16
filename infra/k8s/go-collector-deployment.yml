@@ -10,6 +10,8 @@ spec:
   selector:
     matchLabels:
       app: go-collector
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -38,11 +40,11 @@ spec:
         # -------------------------------------------------------
         resources:
           requests:
-            cpu: "100m"
-            memory: "128Mi"
+            cpu: "20m"
+            memory: "64Mi"
           limits:
-            cpu: "500m"
-            memory: "512Mi"
+            cpu: "200m"
+            memory: "256Mi"
         envFrom:
         - configMapRef:
             name: log-analyzer-config
@@ -86,8 +88,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: go-collector
-  minReplicas: 2
-  maxReplicas: 10
+  minReplicas: 1
+  maxReplicas: 5
   metrics:
   - type: Resource
     resource:
