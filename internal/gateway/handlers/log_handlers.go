@@ -8,8 +8,8 @@ import (
 )
 
 func (h *Handler) SearchLogs(c *gin.Context) {
-	// Fetch real logs from Redis 'recent_logs' ring buffer
-	rawLogs, err := h.redisClient.LRange(c.Request.Context(), "recent_logs", 0, 99).Result()
+	// Fetch real logs from Redis 'v2_recent_logs' ring buffer
+	rawLogs, err := h.redisClient.LRange(c.Request.Context(), "v2_recent_logs", 0, 99).Result()
 	if err != nil {
 		h.logger.Error("Failed to fetch logs from Redis", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch logs"})

@@ -68,7 +68,7 @@ func (h *Handler) ManualAnalysis(c *gin.Context) {
 	h.logger.Info("Triggering Manual AI Forensic Audit from Redis buffer...")
 
 	// 1. Fetch real logs from Redis 'recent_logs'
-	rawLogs, err := h.redisClient.LRange(c.Request.Context(), "recent_logs", 0, 49).Result()
+	rawLogs, err := h.redisClient.LRange(c.Request.Context(), "v2_recent_logs", 0, 49).Result()
 	if err != nil {
 		h.logger.Error("Failed to fetch logs for AI analysis", "error", err)
 	}

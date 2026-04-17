@@ -10,8 +10,8 @@ import (
 
 func (h *Handler) GetDashboardStats(c *gin.Context) {
 	// Calculate dynamic stats from Redis buffers
-	totalLogs, _ := h.redisClient.LLen(c.Request.Context(), "recent_logs").Result()
-	totalAnomalies, _ := h.redisClient.LLen(c.Request.Context(), "recent_anomalies").Result()
+	totalLogs, _ := h.redisClient.LLen(c.Request.Context(), "v2_recent_logs").Result()
+	totalAnomalies, _ := h.redisClient.LLen(c.Request.Context(), "v2_recent_anomalies").Result()
 
 	// Hardcoded health for stability; could be linked to actual probe results
 	healthScore := 100

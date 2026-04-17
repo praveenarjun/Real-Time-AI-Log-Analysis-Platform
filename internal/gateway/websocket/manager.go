@@ -141,9 +141,9 @@ func (m *Manager) consumeTopic(ctx context.Context, topic string, topicType mode
 			// Persistence Layer: Store in Redis Ring Buffer
 			if m.redisClient != nil {
 				data, _ := json.Marshal(payload)
-				key := "recent_logs"
+				key := "v2_recent_logs"
 				if topicType == models.UpdateAnomaly {
-					key = "recent_anomalies"
+					key = "v2_recent_anomalies"
 				}
 
 				pipe := m.redisClient.Pipeline()
