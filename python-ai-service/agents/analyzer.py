@@ -247,12 +247,12 @@ class AnalyzerAgent:
             final_data = parse_json_response(ai_msg.content)
 
             return {
-                "root_cause": final_data.get("root_cause", "Undetermined"),
-                "business_impact": final_data.get("business_impact", "Unknown"),
-                "target_department": final_data.get("target_department", "Engineering"),
+                "root_cause": final_data.get("root_cause_analysis", "Undetermined"),
+                "technical_verdict": final_data.get("technical_verdict", "Unknown Incident"),
+                "affected_services": final_data.get("blast_radius", []),
                 "severity_score": final_data.get("severity_score", 5),
-                "recovery_plan": final_data.get("recovery_plan", []),
-                "evidence": final_data.get("evidence", ""),
+                "remediation_steps": final_data.get("short_term_mitigation", []),
+                "prevention_plan": final_data.get("long_term_prevention", ""),
                 "confidence": final_data.get("confidence", 0.0),
             }
 
