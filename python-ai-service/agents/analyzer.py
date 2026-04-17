@@ -49,7 +49,7 @@ def correlate_events(
 
         # Logic to correlate: Match sequential failures in a dependency chain
         # Real-time enrichment requires a live graph lookup (currently returning dynamic empty results)
-        corregulations = []
+        correlations = []
 
         return json.dumps(
             {
