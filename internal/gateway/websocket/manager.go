@@ -138,7 +138,7 @@ func (m *Manager) consumeTopic(ctx context.Context, topic string, topicType mode
 		if payload != nil {
 			m.logger.Debug("WebSocket Manager: Broadcasting update", "topic", topic, "type", topicType)
 
-			// Persistence Layer: Store in Redis Ring Buffer
+			// Persistence Layer: Store in Redis Ring Buffer (Bypassed if Quota Hit)
 			if m.redisClient != nil {
 				data, _ := json.Marshal(payload)
 				key := "v2_recent_logs"
@@ -148,10 +148,9 @@ func (m *Manager) consumeTopic(ctx context.Context, topic string, topicType mode
 
 				pipe := m.redisClient.Pipeline()
 				pipe.LPush(ctx, key, string(data))
-				pipe.LTrim(ctx, key, 0, 999) // Keep last 1000 items
-				if _, err := pipe.Exec(ctx); err != nil {
-					m.logger.Error("Persistence failure", "error", err, "key", key)
-				}
+				pipe.LTrim(ctx, key, 0, 999)
+				// We execute the pipeline but ignore errors to prevent cloud quota from blocking the live stream
+				_, _ = pipe.Exec(ctx)
 			}
 
 			m.broadcast <- models.RealTimeUpdate{

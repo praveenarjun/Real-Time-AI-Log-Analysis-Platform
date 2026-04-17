@@ -46,6 +46,11 @@ export default function AIForensicsStudio() {
 
   // --- NEW: React to Live Streaming Analytics ---
   useEffect(() => {
+    // Force reset on mount to ensure no stale ghosts are loaded from context
+    setReport(null);
+  }, []);
+
+  useEffect(() => {
     if (wsReport) {
       setReport({
         id: wsReport.id || wsReport.forensic_id || `RPT-FORENSIC-${Date.now().toString(36).toUpperCase()}`,
