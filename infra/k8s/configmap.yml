@@ -5,7 +5,7 @@ metadata:
   namespace: forensic-platform
 data:
   ENVIRONMENT: "dev"
-  KAFKA_BROKERS: "PLACEHOLDER_KAFKA_BROKER"
+  KAFKA_BROKERS: "forensic-kafka-ai-log-analyser.l.aivencloud.com:19800"
   KAFKA_TOPIC_RAW: "raw-logs"
   KAFKA_TOPIC_ANOMALIES: "anomalies"
   KAFKA_TOPIC_REPORTS: "incident-reports"

@@ -148,14 +148,29 @@ func main() {
 	defer wsCancel()
 
 	// Tune into the three forensic frequencies
-	logConsumer, _ := kafka.NewConsumer(cfg.Kafka, cfg.Kafka.Topics.RawLogs, l)
-	wsManager.AddConsumer(wsCtx, cfg.Kafka.Topics.RawLogs, models.UpdateLogBatch, logConsumer)
+	logConsumer, err := kafka.NewConsumer(cfg.Kafka, cfg.Kafka.Topics.RawLogs, l)
+	if err != nil {
+		l.Error("Failed to initialize LOG consumer", "error", err)
+	} else {
+		wsManager.AddConsumer(wsCtx, cfg.Kafka.Topics.RawLogs, models.UpdateLogBatch, logConsumer)
+		l.Info("📡 Forensic Radio: TUNED INTO LOG FREQUENCY", "topic", cfg.Kafka.Topics.RawLogs)
+	}
 
-	anomalyConsumer, _ := kafka.NewConsumer(cfg.Kafka, cfg.Kafka.Topics.Anomalies, l)
-	wsManager.AddConsumer(wsCtx, cfg.Kafka.Topics.Anomalies, models.UpdateAnomaly, anomalyConsumer)
+	anomalyConsumer, err := kafka.NewConsumer(cfg.Kafka, cfg.Kafka.Topics.Anomalies, l)
+	if err != nil {
+		l.Error("Failed to initialize ANOMALY consumer", "error", err)
+	} else {
+		wsManager.AddConsumer(wsCtx, cfg.Kafka.Topics.Anomalies, models.UpdateAnomaly, anomalyConsumer)
+		l.Info("📡 Forensic Radio: TUNED INTO ANOMALY FREQUENCY", "topic", cfg.Kafka.Topics.Anomalies)
+	}
 
-	reportConsumer, _ := kafka.NewConsumer(cfg.Kafka, cfg.Kafka.Topics.IncidentReports, l)
-	wsManager.AddConsumer(wsCtx, cfg.Kafka.Topics.IncidentReports, models.UpdateIncidentReport, reportConsumer)
+	reportConsumer, err := kafka.NewConsumer(cfg.Kafka, cfg.Kafka.Topics.IncidentReports, l)
+	if err != nil {
+		l.Error("Failed to initialize REPORT consumer", "error", err)
+	} else {
+		wsManager.AddConsumer(wsCtx, cfg.Kafka.Topics.IncidentReports, models.UpdateIncidentReport, reportConsumer)
+		l.Info("📡 Forensic Radio: TUNED INTO REPORT FREQUENCY", "topic", cfg.Kafka.Topics.IncidentReports)
+	}
 
 	go wsManager.Run(wsCtx)
 	l.Info("WebSocket Forensic Radio Station initialized", "brokers", cfg.Kafka.Brokers)
