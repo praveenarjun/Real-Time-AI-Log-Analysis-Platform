@@ -18,6 +18,7 @@ spec:
   rules:
   - host: back.praveen-challa.tech
     http:
+      paths:
       - path: /api/v1/ws/stream
         pathType: Prefix
         backend:
