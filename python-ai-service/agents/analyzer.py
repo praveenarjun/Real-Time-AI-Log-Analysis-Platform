@@ -20,23 +20,10 @@ def search_historical_logs(query: str, hours_back: int = 168) -> str:
     # For now, we'll implement a robust simulation with an option for real httpx query
 
     try:
-        # Simulated "Known Issues" Database
-        known_issues = [
-            {
-                "pattern": "ConnectionRefused",
-                "resolution": "Restarted user-db pod. Fixed by increasing max_connections.",
-            },
-            {
-                "pattern": "OutOfMemoryError",
-                "resolution": "Memory leak in auth-v2. Rolled back to v1.4.",
-            },
-            {
-                "pattern": "TimeoutException",
-                "resolution": "Cascading failure due to api-gateway bottleneck. Scaling replicas to 5.",
-            },
-        ]
-
-        matches = [i for i in known_issues if i["pattern"].lower() in query.lower()]
+        # Placeholder for real Elasticsearch 'Historical Incident' integration.
+        # Currently, we return an empty match set to ensure the AI doesn't hallucinate 
+        # mock forensic reports like the legacy 'auth-v2' leak.
+        matches = []
 
         return json.dumps(
             {
@@ -60,24 +47,9 @@ def correlate_events(
         # 1. Matching request_id
         # 2. Sequential failures in a dependency chain
 
-        # Simulated correlation logic
-        correlations = [
-            {
-                "service": "api-gateway",
-                "event": "504 Gateway Timeout",
-                "relative_time": "+2s",
-            },
-            {
-                "service": "auth-service",
-                "event": "Connection Attempt Failed",
-                "relative_time": "0s",
-            },
-            {
-                "service": "user-db",
-                "event": "Postgres Pool Exhaustion",
-                "relative_time": "-1s",
-            },
-        ]
+        # Logic to correlate: Match sequential failures in a dependency chain
+        # Real-time enrichment requires a live graph lookup (currently returning dynamic empty results)
+        corregulations = []
 
         return json.dumps(
             {
@@ -128,10 +100,12 @@ def query_system_metrics(service_name: str, metric_type: str) -> str:
     # Simulated metrics engine
     # In production: query Prometheus/OpenTelemetry
 
+    # Dynamic Metric Fetcher Placeholder (Target: Prometheus / OpenTelemetry)
+    # Returning zeroed metrics to prevent dummy '85.4% CPU' from appearing in reports.
     metrics = {
-        "cpu": {"current": 85.4, "avg": 42.1, "threshold": 80.0},
-        "memory": {"current": 92.1, "avg": 65.0, "threshold": 90.0},
-        "latency": {"current": 1200, "avg": 150, "threshold": 500},
+        "cpu": {"current": 0.0, "avg": 0.0, "threshold": 80.0},
+        "memory": {"current": 0.0, "avg": 0.0, "threshold": 90.0},
+        "latency": {"current": 0, "avg": 0, "threshold": 500},
     }
 
     m = metrics.get(metric_type.lower(), {"current": 0, "avg": 0, "threshold": 0})
