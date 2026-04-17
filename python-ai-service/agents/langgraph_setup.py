@@ -67,16 +67,19 @@ class LogAnalysisSupervisor:
                 max_retries=0,  # Circuit breaker: fail fast
             )
         elif provider == "azure":
-            logger.info(f"Using Azure OpenAI: {settings.LLM_MODEL}")
-            self.llm = AzureChatOpenAI(
-                azure_deployment=settings.LLM_MODEL,
-                azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
-                openai_api_key=settings.AZURE_OPENAI_API_KEY,
-                openai_api_version=settings.OPENAI_API_VERSION,
+            logger.info(f"Using Azure AI Foundry (MaaS): {settings.LLM_MODEL}")
+            # Azure Foundry MaaS endpoints require specific Bearer Token auth
+            self.llm = ChatOpenAI(
+                base_url=f"{settings.AZURE_OPENAI_ENDPOINT}/openai/deployments/{settings.LLM_MODEL}",
+                api_key=settings.AZURE_OPENAI_API_KEY,
+                default_headers={
+                    "Authorization": f"Bearer {settings.AZURE_OPENAI_API_KEY}",
+                },
+                model=settings.LLM_MODEL,
                 temperature=settings.LLM_TEMPERATURE,
                 max_retries=0,
-                # Fix for gpt-5.4-nano / o1-style models:
-                max_completion_tokens=4000, 
+                # Modern parameter for gpt-5.4-nano
+                max_completion_tokens=4000,
             )
         else:
             logger.info(f"Using OpenAI: {settings.LLM_MODEL}")
