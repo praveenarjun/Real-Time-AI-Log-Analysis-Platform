@@ -16,8 +16,8 @@ class DirectFoundryChatModel:
         self.api_key = api_key
         self.model_name = model_name
         self.temperature = temperature
-        # Ensure we use the exact version proved in the manual handshake
-        self.url = f"{self.endpoint}/openai/responses?api-version=2025-04-01-preview"
+        # Surgical Fix: Hard-coding the exact proved URL to prevent double-slashes or SDK folder injection
+        self.url = "https://ailogger.openai.azure.com/openai/responses?api-version=2025-04-01-preview"
 
     def bind_tools(self, tools: List[Any]):
         """Placeholder for LangGraph compatibility. Foundry MaaS logic usually handles this via system prompts."""
