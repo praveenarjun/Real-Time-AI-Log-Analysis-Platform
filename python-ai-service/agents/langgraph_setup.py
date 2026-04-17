@@ -67,17 +67,21 @@ class LogAnalysisSupervisor:
                 max_retries=0,  # Circuit breaker: fail fast
             )
         elif provider in ["azure", "azure-maas"]:
-            logger.info(f"Using Azure OpenAI (Standard): {settings.LLM_MODEL}")
+            logger.info(f"Using Azure AI Foundry (MaaS): {settings.LLM_MODEL}")
+            # Foundry MaaS uses a direct deployment path: {endpoint}/openai/deployments/{model}
             endpoint = settings.AZURE_OPENAI_ENDPOINT.rstrip("/")
-            self.llm = AzureChatOpenAI(
-                azure_deployment=settings.LLM_MODEL,
-                azure_endpoint=endpoint,
-                openai_api_key=settings.AZURE_OPENAI_API_KEY,
-                openai_api_version=settings.OPENAI_API_VERSION,
+            # Construct base_url for Foundry direct handshake
+            # We use ChatOpenAI because it allows more precise base_url control for Foundry than the standard Azure SDK
+            self.llm = ChatOpenAI(
+                model=settings.LLM_MODEL,
+                base_url=f"{endpoint}/openai/deployments/{settings.LLM_MODEL}",
+                api_key=settings.AZURE_OPENAI_API_KEY,
+                default_headers={
+                    "api-key": settings.AZURE_OPENAI_API_KEY,
+                },
                 temperature=settings.LLM_TEMPERATURE,
                 max_retries=0,
-                # Fix for gpt-5.4-nano / o1-style models:
-                max_completion_tokens=4000, 
+                max_completion_tokens=4000
             )
         else:
             logger.info(f"Using OpenAI: {settings.LLM_MODEL}")
