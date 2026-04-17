@@ -75,6 +75,8 @@ class LogAnalysisSupervisor:
                 openai_api_version=settings.OPENAI_API_VERSION,
                 temperature=settings.LLM_TEMPERATURE,
                 max_retries=0,
+                # Fix for gpt-5.4-nano / o1-style models:
+                max_completion_tokens=4000, 
             )
         else:
             logger.info(f"Using OpenAI: {settings.LLM_MODEL}")
@@ -298,7 +300,7 @@ class LogAnalysisSupervisor:
                 rc = "Inferred Authentication/Authorization Issue"
 
             return {
-                "root_cause": rc + " (Local Discovery)",
+                "root_cause": f"Forensic Core Bypass: {rc}. AI reasoning is currently suspended to prevent dummy data generation. Check logs for metadata synchronization issues.",
                 "affected_services": list(
                     set(
                         [
@@ -366,7 +368,7 @@ class LogAnalysisSupervisor:
             logger.warning("CIRCUIT BREAKER: Skipping AI Reporter.")
             return {
                 "incident_report": {
-                    "summary": f"Forensic Insight: Currently analyzing {state.get('log_summary', {}).get('total_count', 0)} telemetry streams. AI reasoning core is currently in failover mode (Safe-Mode)."
+                    "summary": f"CRITICAL: AI Reasoning core is in Safe-Mode. Currently analyzing {state.get('log_summary', {}).get('total_count', 0)} log streams. Dummy data fallbacks have been DELETED. If you see this, the AI core is unreachable."
                 },
                 "ai_circuit_broken": True,
             }
