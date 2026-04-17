@@ -48,11 +48,11 @@ async def consume_logs_background():
                 # Wrap batch in expected format
                 log_batch = {"logs": batch, "timestamp": str(time.time())}
 
-                # 1. Run Analysis
+                # 1. Run Analysis (Non-blocking thread)
                 logger.info(
                     f"Processing batch of {len(batch)} logs from Kafka topic '{settings.KAFKA_TOPIC_RAW}'..."
                 )
-                result = supervisor.run(log_batch)
+                result = await asyncio.to_thread(supervisor.run, log_batch)
 
                 # 2. Extract Outcomes
                 severity = (
@@ -141,7 +141,7 @@ class LogBatchRequest(BaseModel):
 @app.post("/api/analyze")
 async def analyze_full(request: LogBatchRequest):
     """Full-cycle forensics analysis of a log batch."""
-    result = supervisor.run(request.dict())
+    result = await asyncio.to_thread(supervisor.run, request.dict())
     return result
 
 
