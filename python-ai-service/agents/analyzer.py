@@ -8,6 +8,7 @@ from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
 
 from core.prompts import ANALYZER_SYSTEM_PROMPT
 from core.helpers import parse_json_response
+from tools.forensic_history import query_log_history
 
 logger = logging.getLogger("ai-service.analyzer")
 
@@ -183,6 +184,21 @@ def analyze_stack_trace(stack_trace: str) -> str:
         return json.dumps({"error": str(e)})
 
 
+@tool
+def query_forensic_buffer(service_name: str, keyword: str = "") -> str:
+    """
+    Search the real-time internal 'Black Box' buffer for historical telemetry. 
+    Use this to look back 5-10 minutes at the logs of a specific service to find the starting point of an incident.
+    """
+    try:
+        results = query_log_history(service_name=service_name, keyword=keyword)
+        if not results:
+            return f"No historical logs found for service '{service_name}' with keyword '{keyword}' in the current buffer."
+        return json.dumps(results)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
 class AnalyzerAgent:
     def __init__(self, llm: ChatOpenAI):
         self.llm = llm
@@ -192,6 +208,7 @@ class AnalyzerAgent:
             check_service_dependencies,
             query_system_metrics,
             analyze_stack_trace,
+            query_forensic_buffer,
         ]
         self.llm_with_tools = self.llm.bind_tools(self.tools)
 
@@ -232,6 +249,7 @@ class AnalyzerAgent:
                         "check_service_dependencies": check_service_dependencies,
                         "query_system_metrics": query_system_metrics,
                         "analyze_stack_trace": analyze_stack_trace,
+                        "query_forensic_buffer": query_forensic_buffer,
                     }.get(tool_call["name"])
 
                     if tool_func:

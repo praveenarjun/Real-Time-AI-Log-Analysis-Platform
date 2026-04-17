@@ -43,7 +43,7 @@ export default function LogsPage() {
   }, []);
 
   // Merge real-time WebSocket logs with historical ones
-  const allLogs = [...realtimeLogs, ...historicalLogs].slice(0, 200);
+  const allLogs = [...realtimeLogs, ...historicalLogs].slice(0, 1000);
 
   const filteredLogs = allLogs.filter(log => {
     const matchesSearch = (log.message || "").toLowerCase().includes(searchTerm.toLowerCase());

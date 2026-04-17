@@ -1,18 +1,20 @@
 import asyncio
 import logging
 import time
+from collections import deque
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from prometheus_client import generate_latest, Counter, Histogram
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
 from core.config import settings
 from core.kafka_client import LogKafkaConsumer, ResultKafkaProducer
 from agents.langgraph_setup import LogAnalysisSupervisor
+from tools.forensic_history import set_buffer_reference
 from grpc_server.server import start_grpc_server
 
 # --- Logging & Monitoring ---
@@ -32,6 +34,8 @@ kafka_consumer = LogKafkaConsumer(
 )
 
 LATEST_ANALYSIS: Dict[str, Any] = {}
+# Rolling memory of the last 1000 logs for deep forensic search
+FORENSIC_BUFFER: deque = deque(maxlen=1000)
 
 
 # --- Background Forensics Loop ---
@@ -96,6 +100,10 @@ async def consume_logs_background():
                 global LATEST_ANALYSIS
                 LATEST_ANALYSIS = result
 
+                # Update Forensic Buffer (The Flight Recorder)
+                for log in batch:
+                    FORENSIC_BUFFER.append(log)
+
                 LOGS_PROCESSED.labels(status="success").inc(len(batch))
     except Exception as e:
         logger.error(f"Kafka consumer task failed: {e}")
@@ -111,7 +119,10 @@ async def lifespan(app: FastAPI):
     # Start gRPC Server
     grpc_task = asyncio.create_task(start_grpc_server(supervisor, settings.GRPC_PORT))
 
-    # Start Kafka Consumer
+    # Inject buffer reference into forensic tools
+    set_buffer_reference(FORENSIC_BUFFER)
+    
+    # Run Kafka consumption in a separate task
     consumer_task = asyncio.create_task(consume_logs_background())
 
     yield
