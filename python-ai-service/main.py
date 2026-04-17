@@ -4,12 +4,12 @@ import time
 from collections import deque
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import Counter, Histogram, generate_latest
 
 from core.config import settings
 from core.kafka_client import LogKafkaConsumer, ResultKafkaProducer
