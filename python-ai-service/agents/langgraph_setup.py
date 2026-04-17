@@ -66,6 +66,8 @@ class LogAnalysisSupervisor:
                 temperature=settings.LLM_TEMPERATURE,
                 max_retries=0,  # Circuit breaker: fail fast
             )
+        elif provider in ["azure", "azure-maas"]:
+            logger.info(f"Using Azure AI Foundry (MaaS): {settings.LLM_MODEL}")
             endpoint = settings.AZURE_OPENAI_ENDPOINT.rstrip("/")
             # Azure Foundry MaaS endpoints require specific Bearer Token auth
             self.llm = ChatOpenAI(
