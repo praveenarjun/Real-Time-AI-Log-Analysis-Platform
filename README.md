@@ -39,7 +39,7 @@ flowchart LR
 
   %% AI service + model provider
   KRAW -->|consume| AI["Python-AI-Service\nLangChain + LangGraph"]
-  AI -->|LLM calls| LLM["LLM Provider\n(Azure OpenAI / GPT-4o / GPT-4o-mini / Nano*)"]
+  AI -->|gRPC Handshake| LLM["LLM Provider\nDirect Handshake (Nano/MaaS)"]
   AI -->|produce incidents| KINC[("Kafka Topic\nforensic.incidents")]
 
   %% Gateway fans out
@@ -140,6 +140,31 @@ flowchart TB
 
   NOTE["Tip: Persisting every raw log line is optional.\nMany deployments store incidents + sampled evidence only."]
   UI --- NOTE
+
+---
+
+## 🔬 Manual Forensic Audit (Pro-Level Verification)
+
+For resume-level demonstrations, you can bypass the background simulator and trigger an **active forensic investigation** via the Command Deck or direct API.
+
+### 1. Chaos Injection
+Simulate a cascading failure to populate the buffer:
+```bash
+python3 log-simulator/simulator.py --scenario=silent_poison --rate=50
+```
+
+### 2. Forensic Audit Proxy
+Trigger the AI Reasoning engine to analyze the last 50 log entries from the Redis buffer:
+```bash
+curl -X POST http://localhost:8080/api/v1/ai/manual-audit \
+     -H "Content-Type: application/json"
+```
+
+### 3. Predictive Failure Analysis
+Ask the AI to forecast service stability for the next 4 hours:
+```bash
+curl -X GET "http://localhost:8080/api/v1/ai/predict?service=python-ai-service"
+```
 ```
 
 ---

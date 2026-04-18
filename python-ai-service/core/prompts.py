@@ -60,6 +60,7 @@ Schema:
 {
   "title": "High-Impact Technical Incident Title",
   "executive_summary": "Concise forensic summary for leadership",
+  "root_cause_analysis": "Deep technical explanation of the failure origin and mechanics",
   "forensic_id": "SIG-XXXX-XXXX",
   "action_items": [
     {"task": "Specific technical task", "priority": "CRITICAL|HIGH|MEDIUM", "assignee_role": "Role (e.g. DevOps, DBA, SecOps)"}

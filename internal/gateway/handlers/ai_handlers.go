@@ -48,8 +48,21 @@ func (h *Handler) GetAnomalyByID(c *gin.Param) {
 
 func (h *Handler) GenerateReport(c *gin.Context) {
 	h.logger.Info("Generating report")
-	// gRPC call to GenerateReport
-	c.JSON(http.StatusAccepted, gin.H{"message": "Report generation started"})
+	
+	start := c.Query("start")
+	end := c.Query("end")
+	
+	report, err := h.aiClient.GenerateReport(c.Request.Context(), start, end)
+	if err != nil {
+		h.logger.Error("Failed to generate report", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "AI reporting service unavailable"})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"report": report,
+	})
 }
 
 func (h *Handler) ChatWithAI(c *gin.Context) {
@@ -59,7 +72,23 @@ func (h *Handler) ChatWithAI(c *gin.Context) {
 
 func (h *Handler) PredictFailures(c *gin.Context) {
 	h.logger.Info("Predicting failures")
-	c.JSON(http.StatusOK, gin.H{"predictions": []interface{}{}})
+	
+	service := c.Query("service")
+	if service == "" {
+		service = "all"
+	}
+	
+	predictions, err := h.aiClient.PredictFailures(c.Request.Context(), service)
+	if err != nil {
+		h.logger.Error("Failed to predict failures", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "AI prediction service unavailable"})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{
+		"status":      "success",
+		"predictions": predictions,
+	})
 }
 
 func (h *Handler) ManualAnalysis(c *gin.Context) {

@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS attendance (
     check_out TIMESTAMP WITH TIME ZONE,
     status VARCHAR(50) NOT NULL, -- e.g., PRESENT, ABSENT, LATE
     notes TEXT,
+    work_hours DECIMAL(5, 2) DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(employee_id, date)
@@ -96,47 +97,63 @@ CREATE INDEX IX_Leave_Status_Date ON leave_requests (status, start_date) INCLUDE
 -- STORED PROCEDURES / FUNCTIONS (PostgreSQL equivalent)
 
 -- 1. Get Monthly Attendance Report
-CREATE OR REPLACE FUNCTION get_monthly_attendance_report(p_month INTEGER, p_year INTEGER)
-RETURNS TABLE(employee_id UUID, total_present BIGINT, avg_hours DOUBLE PRECISION) AS $$
+CREATE OR REPLACE FUNCTION sp_GetMonthlyAttendanceReport(p_month INTEGER, p_year INTEGER)
+RETURNS TABLE(employee_id UUID, total_present BIGINT, avg_hours DOUBLE PRECISION, performance_rank BIGINT) AS $$
 BEGIN
     RETURN QUERY
+    WITH MonthlyStats AS (
+        SELECT 
+            a.employee_id,
+            COUNT(*) FILTER (WHERE a.status = 'PRESENT') as present_count,
+            AVG(COALESCE(work_hours, 0)) as avg_work_hours
+        FROM attendance a
+        WHERE EXTRACT(MONTH FROM a.date) = p_month AND EXTRACT(YEAR FROM a.date) = p_year
+        GROUP BY a.employee_id
+    )
     SELECT 
-        a.employee_id,
-        COUNT(*) FILTER (WHERE a.status = 'PRESENT') as total_present,
-        AVG(EXTRACT(EPOCH FROM (a.check_out - a.check_in))/3600) as avg_hours
-    FROM attendance a
-    WHERE EXTRACT(MONTH FROM a.date) = p_month AND EXTRACT(YEAR FROM a.date) = p_year
-    GROUP BY a.employee_id;
+        ms.employee_id,
+        ms.present_count,
+        ms.avg_work_hours,
+        DENSE_RANK() OVER (ORDER BY ms.avg_work_hours DESC) as performance_rank
+    FROM MonthlyStats ms;
 END;
 $$ LANGUAGE plpgsql;
 
 
 -- 2. Calculate Leave Balance
-CREATE OR REPLACE FUNCTION calculate_leave_balance(p_employee_id UUID, p_year INTEGER)
+CREATE OR REPLACE FUNCTION sp_CalculateLeaveBalance(p_employee_id UUID, p_year INTEGER)
 RETURNS INTEGER AS $$
 DECLARE
+    v_total_balance INTEGER := 30;
     v_used_days INTEGER;
 BEGIN
-    SELECT COALESCE(SUM(total_days), 0)
-    INTO v_used_days
-    FROM leave_requests
-    WHERE employee_id = p_employee_id 
-      AND status = 'APPROVED'
-      AND EXTRACT(YEAR FROM start_date) = p_year;
+    -- Using CTE and conditional aggregation as per rules
+    WITH LeaveSummary AS (
+        SELECT 
+            employee_id,
+            SUM(CASE WHEN status = 'APPROVED' THEN total_days ELSE 0 END) as approved_days
+        FROM leave_requests
+        WHERE employee_id = p_employee_id 
+          AND EXTRACT(YEAR FROM start_date) = p_year
+        GROUP BY employee_id
+    )
+    SELECT COALESCE(approved_days, 0) INTO v_used_days
+    FROM LeaveSummary;
     
-    RETURN 30 - v_used_days; -- Assuming 30 days default
+    RETURN v_total_balance - COALESCE(v_used_days, 0);
 END;
 $$ LANGUAGE plpgsql;
 
 -- 3. Get Department Headcount
-CREATE OR REPLACE FUNCTION get_department_headcount()
-RETURNS TABLE(department_name VARCHAR, headcount BIGINT, salary_percentage DOUBLE PRECISION) AS $$
+CREATE OR REPLACE FUNCTION sp_GetDepartmentHeadcount()
+RETURNS TABLE(department_name VARCHAR, headcount BIGINT, salary_percentage DOUBLE PRECISION, dept_rank BIGINT) AS $$
 BEGIN
     RETURN QUERY
     SELECT 
         d.name,
-        COUNT(e.id),
-        (SUM(e.salary) / SUM(SUM(e.salary)) OVER ()) * 100
+        COUNT(e.id) as count,
+        (SUM(COALESCE(e.salary, 0)) / NULLIF(SUM(SUM(COALESCE(e.salary, 0))) OVER (), 0)) * 100 as salary_pct,
+        ROW_NUMBER() OVER (ORDER BY COUNT(e.id) DESC) as rank
     FROM departments d
     LEFT JOIN employees e ON d.id = e.department_id AND e.is_active = true
     GROUP BY d.name;

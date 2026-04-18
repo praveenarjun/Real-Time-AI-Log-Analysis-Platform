@@ -60,6 +60,7 @@ type Attendance struct {
 	CheckOut   time.Time `json:"check_out"`
 	Status     string    `json:"status"`
 	Notes      string    `json:"notes"`
+	WorkHours  float64   `json:"work_hours"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }

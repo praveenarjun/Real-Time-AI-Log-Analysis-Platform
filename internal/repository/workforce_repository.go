@@ -52,12 +52,17 @@ func (r *WorkforceRepository) RecordAttendance(ctx context.Context, att *models.
 		return fmt.Errorf("database pool not initialized")
 	}
 	query := `INSERT INTO attendance (
-		id, employee_id, date, check_in, status, created_at, updated_at
-	) VALUES ($1, $2, $3, $4, $5, $6, $7)
-	ON CONFLICT (employee_id, date) DO UPDATE SET check_in = EXCLUDED.check_in, updated_at = EXCLUDED.updated_at`
+		id, employee_id, date, check_in, check_out, status, work_hours, created_at, updated_at
+	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	ON CONFLICT (employee_id, date) DO UPDATE SET 
+		check_in = EXCLUDED.check_in, 
+		check_out = EXCLUDED.check_out,
+		status = EXCLUDED.status,
+		work_hours = EXCLUDED.work_hours,
+		updated_at = EXCLUDED.updated_at`
 
 	_, err := r.pool.Exec(ctx, query,
-		uuid.New(), att.EmployeeID, att.Date, att.CheckIn, att.Status, time.Now(), time.Now(),
+		uuid.New(), att.EmployeeID, att.Date, att.CheckIn, att.CheckOut, att.Status, att.WorkHours, time.Now(), time.Now(),
 	)
 	return err
 }
@@ -66,7 +71,7 @@ func (r *WorkforceRepository) GetDepartmentHeadcount(ctx context.Context) ([]map
 	if r.pool == nil {
 		return nil, fmt.Errorf("database pool not initialized")
 	}
-	rows, err := r.pool.Query(ctx, "SELECT department_name, headcount, salary_percentage FROM get_department_headcount()")
+	rows, err := r.pool.Query(ctx, "SELECT department_name, headcount, salary_percentage, dept_rank FROM sp_GetDepartmentHeadcount()")
 	if err != nil {
 		return nil, err
 	}
@@ -77,13 +82,15 @@ func (r *WorkforceRepository) GetDepartmentHeadcount(ctx context.Context) ([]map
 		var name string
 		var headcount int64
 		var percentage float64
-		if err := rows.Scan(&name, &headcount, &percentage); err != nil {
+		var rank int64
+		if err := rows.Scan(&name, &headcount, &percentage, &rank); err != nil {
 			return nil, err
 		}
 		results = append(results, map[string]interface{}{
 			"department_name": name,
 			"count":           headcount,
 			"salary_pct":      percentage,
+			"rank":            rank,
 		})
 	}
 	return results, nil
@@ -120,4 +127,42 @@ func (r *WorkforceRepository) ListEmployees(ctx context.Context) ([]models.Emplo
 		employees = append(employees, e)
 	}
 	return employees, nil
+}
+
+func (r *WorkforceRepository) GetMonthlyAttendanceReport(ctx context.Context, month, year int) ([]map[string]interface{}, error) {
+	if r.pool == nil {
+		return nil, fmt.Errorf("database pool not initialized")
+	}
+	rows, err := r.pool.Query(ctx, "SELECT employee_id, total_present, avg_hours, performance_rank FROM sp_GetMonthlyAttendanceReport($1, $2)", month, year)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []map[string]interface{}
+	for rows.Next() {
+		var empID uuid.UUID
+		var totalPresent int64
+		var avgHours float64
+		var rank int64
+		if err := rows.Scan(&empID, &totalPresent, &avgHours, &rank); err != nil {
+			return nil, err
+		}
+		results = append(results, map[string]interface{}{
+			"employee_id":   empID,
+			"total_present": totalPresent,
+			"avg_hours":     avgHours,
+			"rank":          rank,
+		})
+	}
+	return results, nil
+}
+
+func (r *WorkforceRepository) CalculateLeaveBalance(ctx context.Context, employeeID uuid.UUID, year int) (int, error) {
+	if r.pool == nil {
+		return 0, fmt.Errorf("database pool not initialized")
+	}
+	var balance int
+	err := r.pool.QueryRow(ctx, "SELECT sp_CalculateLeaveBalance($1, $2)", employeeID, year).Scan(&balance)
+	return balance, err
 }

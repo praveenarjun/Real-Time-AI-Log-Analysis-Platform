@@ -44,16 +44,12 @@ class AIAnalysisServiceServicer(ai_analysis_pb2_grpc.AIAnalysisServiceServicer):
 
         # 3. Convert Dict -> Proto
         return ai_analysis_pb2.AnalysisResponse(
-            batch_id=request.batch_id,
-            has_anomalies=result.get("anomalies_detected", False),
             anomalies=[
                 self._dict_to_anomaly_proto(a) for a in result.get("anomalies", [])
             ],
-            root_cause=result.get("root_cause", ""),
-            report_summary=result.get("incident_report", {}).get(
-                "executive_summary", ""
-            ),
-            risk_score=result.get("risk_score", 0.0),
+            summary=result.get("root_cause", ""),
+            health_score=100.0 - (result.get("risk_score", 0.0) * 100.0),
+            processing_time_ms=result.get("processing_time_ms", 0)
         )
 
     def StreamAnalysis(self, request_iterator, context):
@@ -67,6 +63,67 @@ class AIAnalysisServiceServicer(ai_analysis_pb2_grpc.AIAnalysisServiceServicer):
             if result.get("anomalies_detected"):
                 for a in result.get("anomalies", []):
                     yield self._dict_to_anomaly_proto(a)
+
+    def GenerateReport(self, request, context):
+        """Generates a comprehensive incident report for a specific time range."""
+        logger.info(f"gRPC: Generating report for range {request.time_range_start} to {request.time_range_end}")
+        
+        # In a real system, we'd fetch logs for this range. 
+        # For the demo, we run the supervisor on the internal state.
+        result = self.supervisor.run({"report_request": True})
+        report = result.get("incident_report", {})
+        
+        return ai_analysis_pb2.IncidentReport(
+            id=report.get("id", "REP-" + str(int(time.time()))),
+            title=report.get("title", "Forensic Incident Report"),
+            severity=ai_analysis_pb2.Severity.Value(report.get("severity", "MEDIUM")),
+            executive_summary=report.get("executive_summary", "Summary not available."),
+            root_cause_analysis=report.get("root_cause_analysis", "Investigating..."),
+            affected_services=report.get("affected_services", []),
+            risk_score=float(report.get("risk_score", 0.0)),
+            generated_at=time.ctime()
+        )
+
+    def ChatAboutLogs(self, request, context):
+        """Streaming chat interface with the AI Forensic Assistant."""
+        logger.info(f"gRPC: Chat request received: {request.message}")
+        
+        # Simulated streaming response logic
+        chunks = [
+            f"Analyzing query: {request.message}...",
+            "Checking forensic buffer for related telemetry...",
+            "Cross-referencing with known failure patterns...",
+            "Conclusion: The system shows regular pulse. No anomalies detected in the provided context."
+        ]
+        
+        for chunk in chunks:
+            time.sleep(0.2)
+            yield ai_analysis_pb2.ChatResponse(content=chunk, is_final=(chunk == chunks[-1]))
+
+    def PredictFailures(self, request, context):
+        """Predicts potential future failures based on current log trends."""
+        logger.info(f"gRPC: Predicting failures for service {request.service_name}")
+        
+        result = self.supervisor.run({"predict_only": True})
+        preds = result.get("predictions", [])
+        
+        proto_preds = []
+        for p in preds:
+            proto_preds.append(ai_analysis_pb2.Prediction(
+                service_name=request.service_name,
+                failure_type=p.get("type", "Saturation"),
+                probability=p.get("confidence", 0.5),
+                recommendation=p.get("mitigation", "Monitor dashboard")
+            ))
+            
+        return ai_analysis_pb2.PredictionResponse(predictions=proto_preds)
+
+    def HealthCheck(self, request, context):
+        """Standard health check for the AI service."""
+        return ai_analysis_pb2.HealthCheckResponse(
+            status="SERVING",
+            details={"provider": settings.LLM_PROVIDER, "model": settings.LLM_MODEL}
+        )
 
     # --- Helper Mappers ---
 

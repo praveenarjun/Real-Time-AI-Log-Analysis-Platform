@@ -2,7 +2,7 @@ import logging
 import time
 from typing import List, Dict, Any, Annotated, TypedDict
 
-from langchain_openai import ChatOpenAI, AzureChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import BaseMessage
@@ -72,9 +72,10 @@ class LogAnalysisSupervisor:
             # Bypassing the SDK and using a Direct Handshake to ensure 100% path accuracy.
             from core.foundry_client import DirectFoundryChatModel
             self.llm = DirectFoundryChatModel(
-                endpoint=settings.AZURE_OPENAI_ENDPOINT.rstrip("/"),
+                endpoint=settings.AZURE_OPENAI_ENDPOINT,
                 api_key=settings.AZURE_OPENAI_API_KEY,
                 model_name=settings.LLM_MODEL,
+                api_version=settings.AZURE_OPENAI_API_VERSION,
                 temperature=settings.LLM_TEMPERATURE
             )
         else:

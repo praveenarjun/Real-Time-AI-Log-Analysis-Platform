@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"praveenchalla.local/ai-log-analyzer/internal/models"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func (h *Handler) CreateEmployee(c *gin.Context) {
@@ -57,4 +59,42 @@ func (h *Handler) GetDepartmentHeadcount(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"headcount": stats})
+}
+
+func (h *Handler) GetMonthlyAttendanceReport(c *gin.Context) {
+	month, _ := strconv.Atoi(c.Query("month"))
+	year, _ := strconv.Atoi(c.Query("year"))
+
+	if month == 0 || year == 0 {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "month and year are required"})
+		return
+	}
+
+	report, err := h.repo.GetMonthlyAttendanceReport(c.Request.Context(), month, year)
+	if err != nil {
+		h.logger.Error("Failed to fetch attendance report", "error", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"report": report})
+}
+
+func (h *Handler) GetLeaveBalance(c *gin.Context) {
+	employeeID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid employee id"})
+		return
+	}
+	year, _ := strconv.Atoi(c.Query("year"))
+	if year == 0 {
+		year = 2024
+	}
+
+	balance, err := h.repo.CalculateLeaveBalance(c.Request.Context(), employeeID, year)
+	if err != nil {
+		h.logger.Error("Failed to calculate leave balance", "error", err)
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"balance": balance})
 }

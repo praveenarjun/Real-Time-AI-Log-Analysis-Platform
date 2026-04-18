@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     GOOGLE_API_KEY: str = ""
     AZURE_OPENAI_API_KEY: str = ""
     AZURE_OPENAI_ENDPOINT: str = ""
+    AZURE_OPENAI_API_VERSION: str = "2025-04-01-preview"
     OPENAI_API_VERSION: str = "2023-05-15"
 
     LLM_PROVIDER: str = "openai"  # gemini, openai, or azure
