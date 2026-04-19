@@ -351,7 +351,7 @@ export default function AIForensicsStudio() {
                  {[
                    { name: `REASONER-${nodeId}`, status: analyzing ? "Direct_Audit..." : "Idle", risk: report?.severity === 'CRITICAL' ? "High" : "Low" },
                    { name: "PATTERN-MESH", status: wsStatus === "connected" ? "Live_Stream" : "Syncing...", risk: "Low" },
-                   { name: "TELEMETRY-GO", status: isReady ? "Active" : "Handshaking", risk: "Low" },
+                   { name: "TELEMETRY-GO", status: wsStatus === "connected" ? "Active" : "Handshaking", risk: "Low" },
                  ].map((node, i) => (
                     <div key={i} className="flex items-center justify-between group">
                        <div className="space-y-1">
