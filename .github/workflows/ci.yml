@@ -121,21 +121,32 @@ jobs:
         run: docker compose up -d
       - name: Wait for Platform Health
         run: |
-          echo "Waiting for API Gateway to be healthy..."
+          echo "Waiting for Gateway to be Healthy (Process Start)..."
           NEXT_WAIT_TIME=0
-          # Wait up to 120 seconds for the entire platform to settle
           until [ "$(docker inspect --format='{{.State.Health.Status}}' $(docker compose ps -q go-gateway))" == "healthy" ]; do
+            if [ $NEXT_WAIT_TIME -ge 60 ]; then
+              echo "❌ Gateway container failed to reach healthy state"
+              docker compose logs go-gateway
+              exit 1
+            fi
+            sleep 5
+            NEXT_WAIT_TIME=$((NEXT_WAIT_TIME + 5))
+          done
+          
+          echo "Waiting for Platform Readiness (Backend Handshake)..."
+          NEXT_WAIT_TIME=0
+          until curl -s http://localhost:8080/health | grep -q 'UP'; do
             if [ $NEXT_WAIT_TIME -ge 120 ]; then
-              echo "❌ Platform failed to reach healthy state within 120s"
+              echo "❌ Platform failed to reach UP state within 120s"
               docker compose logs go-gateway
               docker compose logs ai-service
               exit 1
             fi
-            echo "Waiting for Gateway handshake... ($NEXT_WAIT_TIME/120s)"
+            echo "Status: $(curl -s http://localhost:8080/health | jq -r .status || echo 'unknown') ($NEXT_WAIT_TIME/120s)"
             sleep 5
             NEXT_WAIT_TIME=$((NEXT_WAIT_TIME + 5))
           done
-          echo "✅ Platform is fully operational."
+          echo "✅ Platform is fully UP and operational."
 
       - name: Run Smoke Test
         run: |

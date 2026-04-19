@@ -1,18 +1,18 @@
 package main
 
 import (
-	"fmt"
-	"net"
-
 	"context"
 	"crypto/tls"
+	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
 	"os/signal"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -46,10 +46,20 @@ func main() {
 	// 3. Initialize Metrics
 	m := metrics.NewMetrics("api-gateway")
 
-	// 4. Initialize Infrastructure (Smart Redis Security)
+	// 4. Shared State for Async Readiness
+	var (
+		isReady       atomic.Bool
+		h             *handlers.Handler
+		rdb           *redis.Client
+		workforceRepo *repository.WorkforceRepository
+		aiRepo        *repository.AIRepository
+		aiClient      *grpc_client.AIServiceClient
+		wsManager     *websocket.Manager
+	)
+
+	// 5. Initialize Redis (Required for Rate Limiting & WebSockets)
 	redisAddr := cfg.Redis.URL
 	redisHost := ""
-	
 	if u, err := url.Parse(cfg.Redis.URL); err == nil && u.Host != "" {
 		redisAddr = u.Host
 		if h, _, err := net.SplitHostPort(u.Host); err == nil {
@@ -73,130 +83,116 @@ func main() {
 
 	if useTLS {
 		l.Info("Enabling TLS for Redis connection...", "server_name", redisHost)
-		redisOpts.TLSConfig = &tls.Config{
-			ServerName: redisHost,
+		redisOpts.TLSConfig = &tls.Config{ServerName: redisHost}
+	}
+
+	rdb = redis.NewClient(redisOpts)
+
+	// 6. Background Initialization (Non-blocking)
+	go func() {
+		l.Info("Background initialization started...")
+
+		// A. Database Connection
+		dbURL := cfg.Database.DSN
+		if envURL := os.Getenv("DATABASE_URL"); envURL != "" && !strings.Contains(envURL, "PLACEHOLDER") {
+			dbURL = envURL
 		}
-	} else {
-		l.Info("Connecting to Redis via plain TCP (No TLS)...")
-	}
-
-	rdb := redis.NewClient(redisOpts)
-	ctxPing, cancelPing := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancelPing()
-	if err := rdb.Ping(ctxPing).Err(); err != nil {
-		l.Error("CRITICAL: Redis connection failed", "error", err)
-	} else {
-		l.Info("Connected to Redis Cache")
-	}
-
-	// 5. Database Connection
-	dbURL := cfg.Database.DSN
-	if envURL := os.Getenv("DATABASE_URL"); envURL != "" && !strings.Contains(envURL, "PLACEHOLDER") {
-		dbURL = envURL
-	}
-
-	if dbURL != "" {
-		if strings.Contains(dbURL, "db.ivljtbrvvhfrkauxxojn.supabase.co") {
-			l.Warn("Self-healing: Detected Direct IPv6 host. Redirecting to IPv4 Pooler Tunnel...")
-			dbURL = strings.ReplaceAll(dbURL, "db.ivljtbrvvhfrkauxxojn.supabase.co", "aws-1-ap-northeast-2.pooler.supabase.com")
-			dbURL = strings.ReplaceAll(dbURL, ":5432", ":6543")
-			if strings.Contains(dbURL, "user=postgres ") || strings.Contains(dbURL, "://postgres:") {
-				dbURL = strings.ReplaceAll(dbURL, "user=postgres", "user=postgres.ivljtbrvvhfrkauxxojn")
-				dbURL = strings.ReplaceAll(dbURL, "://postgres:", "://postgres.ivljtbrvvhfrkauxxojn:")
-			}
-		}
-		if strings.Contains(dbURL, "*") && !strings.Contains(dbURL, "%2A") {
-			dbURL = strings.ReplaceAll(dbURL, "*", "%2A")
-		}
-	}
-
-	var pool *pgxpool.Pool
-	if dbURL != "" {
-		dbConfig, err := pgxpool.ParseConfig(dbURL)
-		if err != nil {
-			l.Error("CRITICAL: PostgreSQL config parsing failed", "error", err)
-		} else {
-			dbConfig.ConnConfig.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
-				var d net.Dialer
-				return d.DialContext(ctx, "tcp4", addr)
-			}
-
-			dbRetries := 15
-			for dbRetries > 0 {
-				pool, err = pgxpool.NewWithConfig(context.Background(), dbConfig)
-				if err == nil {
-					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-					if err := pool.Ping(ctx); err == nil {
-						l.Info("Connected to PostgreSQL (Workforce DB)")
-						cancel()
-						break
-					}
-					cancel()
-					pool.Close()
+		if dbURL != "" {
+			if strings.Contains(dbURL, "db.ivljtbrvvhfrkauxxojn.supabase.co") {
+				dbURL = strings.ReplaceAll(dbURL, "db.ivljtbrvvhfrkauxxojn.supabase.co", "aws-1-ap-northeast-2.pooler.supabase.com")
+				dbURL = strings.ReplaceAll(dbURL, ":5432", ":6543")
+				if strings.Contains(dbURL, "user=postgres ") || strings.Contains(dbURL, "://postgres:") {
+					dbURL = strings.ReplaceAll(dbURL, "user=postgres", "user=postgres.ivljtbrvvhfrkauxxojn")
+					dbURL = strings.ReplaceAll(dbURL, "://postgres:", "://postgres.ivljtbrvvhfrkauxxojn:")
 				}
-				dbRetries--
-				l.Warn("Waiting for Database to wake up...", "retries_left", dbRetries)
-				time.Sleep(2 * time.Second)
 			}
-			if pool == nil {
-				log.Fatalf("CRITICAL: Failed to connect to Database after multiple attempts")
+			if strings.Contains(dbURL, "*") && !strings.Contains(dbURL, "%2A") {
+				dbURL = strings.ReplaceAll(dbURL, "*", "%2A")
 			}
-			defer pool.Close()
+
+			dbConfig, _ := pgxpool.ParseConfig(dbURL)
+			if dbConfig != nil {
+				dbConfig.ConnConfig.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
+					var d net.Dialer
+					return d.DialContext(ctx, "tcp4", addr)
+				}
+				dbRetries := 30
+				for dbRetries > 0 {
+					pool, err := pgxpool.NewWithConfig(context.Background(), dbConfig)
+					if err == nil {
+						if err := pool.Ping(context.Background()); err == nil {
+							l.Info("Connected to PostgreSQL (Workforce DB)")
+							workforceRepo = repository.NewWorkforceRepository(pool, l)
+							aiRepo = repository.NewAIRepository(pool, l)
+							break
+						}
+						pool.Close()
+					}
+					dbRetries--
+					l.Warn("Waiting for DB...", "retries_left", dbRetries)
+					time.Sleep(2 * time.Second)
+				}
+			}
 		}
-	}
 
-	workforceRepo := repository.NewWorkforceRepository(pool, l)
-	aiRepo := repository.NewAIRepository(pool, l)
-
-	// 6. gRPC Bridge
-	var aiClient *grpc_client.AIServiceClient
-	grpcRetries := 15
-	for grpcRetries > 0 {
-		aiClient, err = grpc_client.NewAIServiceClient(cfg.Gateway.AIServiceGRPC, l)
-		if err == nil {
-			break
+		// B. gRPC Bridge
+		grpcRetries := 30
+		for grpcRetries > 0 {
+			var gerr error
+			aiClient, gerr = grpc_client.NewAIServiceClient(cfg.Gateway.AIServiceGRPC, l)
+			if gerr == nil {
+				l.Info("AI Service gRPC Bridge connected")
+				break
+			}
+			grpcRetries--
+			l.Warn("Waiting for AI Service...", "retries_left", grpcRetries)
+			time.Sleep(2 * time.Second)
 		}
-		grpcRetries--
-		l.Warn("Failed to connect to AI Service gRPC (waiting for boot...)", "error", err, "retries_left", grpcRetries)
-		if grpcRetries == 0 {
-			log.Fatalf("CRITICAL: Failed to connect to AI Service gRPC: %v", err)
+
+		// C. WebSocket and Kafka
+		wsManager = websocket.NewManager(rdb, aiRepo, l)
+		wsCtx, _ := context.WithCancel(context.Background())
+		topics := []struct {
+			Name string
+			Type models.UpdateType
+		}{
+			{cfg.Kafka.Topics.RawLogs, models.UpdateLogBatch},
+			{cfg.Kafka.Topics.Anomalies, models.UpdateAnomaly},
+			{cfg.Kafka.Topics.IncidentReports, models.UpdateIncidentReport},
 		}
-		time.Sleep(2 * time.Second)
-	}
-	defer aiClient.Close()
 
-	// 7. WebSocket and Kafka
-	wsManager := websocket.NewManager(rdb, aiRepo, l)
-	wsCtx, wsCancel := context.WithCancel(context.Background())
-	defer wsCancel()
-
-	topics := []struct {
-		Name string
-		Type models.UpdateType
-	}{
-		{cfg.Kafka.Topics.RawLogs, models.UpdateLogBatch},
-		{cfg.Kafka.Topics.Anomalies, models.UpdateAnomaly},
-		{cfg.Kafka.Topics.IncidentReports, models.UpdateIncidentReport},
-	}
-
-	for _, t := range topics {
-		consumer, err := kafka.NewConsumer(cfg.Kafka, t.Name, l)
-		if err != nil {
-			l.Error("Failed to initialize consumer", "topic", t.Name, "error", err)
-		} else {
-			wsManager.AddConsumer(wsCtx, t.Name, t.Type, consumer)
-			l.Info("Tuned into Kafka topic", "topic", t.Name)
+		for _, t := range topics {
+			consumer, err := kafka.NewConsumer(cfg.Kafka, t.Name, l)
+			if err == nil {
+				wsManager.AddConsumer(wsCtx, t.Name, t.Type, consumer)
+				l.Info("Tuned into Kafka", "topic", t.Name)
+			}
 		}
-	}
+		go wsManager.Run(wsCtx)
 
-	go wsManager.Run(wsCtx)
+		// D. Finalize Handlers
+		h = handlers.NewHandler(aiClient, rdb, wsManager, m, l, workforceRepo, aiRepo)
+		isReady.Store(true)
+		l.Info("API Gateway fully operational (READY)")
+	}()
 
-	// 8. Handlers and Router
-	h := handlers.NewHandler(aiClient, rdb, wsManager, m, l, workforceRepo, aiRepo)
+	// 7. HTTP Server Setup (Immediate)
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())
 
-	// Proxy
+	// Health Check (Responsive immediately)
+	router.GET("/health", func(c *gin.Context) {
+		status := "STARTING"
+		if isReady.Load() {
+			status = "UP"
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status":    status,
+			"timestamp": time.Now(),
+		})
+	})
+
+	// Proxy Logic
 	router.Any("/api/v1/ingest/*proxyPath", func(c *gin.Context) {
 		target := "http://go-collector:8081"
 		if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
@@ -207,49 +203,97 @@ func main() {
 		proxy.ServeHTTP(c.Writer, c.Request)
 	})
 
-	router.Use(middleware.RateLimitMiddleware(rdb, l))
-
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "UP", "timestamp": time.Now()})
-	})
-
+	// Platform Routes (Readiness Aware)
 	api := router.Group("/api/v1")
+	api.Use(middleware.RateLimitMiddleware(rdb, l))
 	{
-		api.GET("/logs", h.SearchLogs)
-		api.POST("/analyze", h.ManualAnalysis)
-		api.GET("/anomalies", h.GetAnomalies)
-		api.GET("/incidents/latest", h.GetLatestIncident)
-		api.GET("/ws/stream", h.StreamLogs)
-		api.GET("/stats", h.GetDashboardStats)
-		api.GET("/health", h.GetSystemHealth)
-		api.GET("/workforce/employees", h.ListEmployees)
-		api.POST("/workforce/employees", h.CreateEmployee)
-		api.GET("/workforce/headcount", h.GetDepartmentHeadcount)
+		// Wrap handlers to ensure they don't crash if h is nil
+		readyCheck := func(c *gin.Context) bool {
+			if !isReady.Load() || h == nil {
+				c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Platform initializing. Please wait."})
+				return false
+			}
+			return true
+		}
+
+		api.GET("/logs", func(c *gin.Context) {
+			if readyCheck(c) {
+				h.SearchLogs(c)
+			}
+		})
+		api.POST("/analyze", func(c *gin.Context) {
+			if readyCheck(c) {
+				h.ManualAnalysis(c)
+			}
+		})
+		api.GET("/anomalies", func(c *gin.Context) {
+			if readyCheck(c) {
+				h.GetAnomalies(c)
+			}
+		})
+		api.GET("/incidents/latest", func(c *gin.Context) {
+			if readyCheck(c) {
+				h.GetLatestIncident(c)
+			}
+		})
+		api.GET("/ws/stream", func(c *gin.Context) {
+			if readyCheck(c) {
+				h.StreamLogs(c)
+			}
+		})
+		api.GET("/stats", func(c *gin.Context) {
+			if readyCheck(c) {
+				h.GetDashboardStats(c)
+			}
+		})
+		api.GET("/health", func(c *gin.Context) {
+			if readyCheck(c) {
+				h.GetSystemHealth(c)
+			}
+		})
+		api.GET("/workforce/employees", func(c *gin.Context) {
+			if readyCheck(c) {
+				h.ListEmployees(c)
+			}
+		})
+		api.POST("/workforce/employees", func(c *gin.Context) {
+			if readyCheck(c) {
+				h.CreateEmployee(c)
+			}
+		})
+		api.GET("/workforce/headcount", func(c *gin.Context) {
+			if readyCheck(c) {
+				h.GetDepartmentHeadcount(c)
+			}
+		})
 	}
 
-	// 9. Start Server
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Gateway.HTTPPort),
 		Handler: router,
 	}
 
 	go func() {
+		l.Info("API Gateway listening", "port", cfg.Gateway.HTTPPort)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("CRITICAL: Server failure: %v", err)
 		}
 	}()
 
-	l.Info("API Gateway is listening", "port", cfg.Gateway.HTTPPort)
-
+	// 8. Graceful Shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	l.Info("Shutting down...")
-	ctxShut, cancelShut := context.WithTimeout(context.Background(), 5*time.Second)
+	l.Info("Shutting down Gateway...")
+	ctxShut, cancelShut := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelShut()
+
 	if err := srv.Shutdown(ctxShut); err != nil {
 		l.Error("CRITICAL: Server forced to shutdown", "error", err)
+	}
+	if aiClient != nil {
+		aiClient.Close()
 	}
 	l.Info("API Gateway exited cleanly")
 }
