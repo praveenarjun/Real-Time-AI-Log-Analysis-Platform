@@ -69,8 +69,9 @@ class LogKafkaConsumer:
                 break
             except Exception as e:
                 retries -= 1
-                logger.warning(f"Kafka consumer startup failed (waiting for coordinator?): {e}. Retries left: {retries}")
-                if retries == 0: raise e
+                logger.warning(f"Kafka consumer startup failed: {e}. Retries left: {retries}")
+                if retries == 0:
+                    raise e
                 await asyncio.sleep(3)
 
         try:
@@ -92,8 +93,9 @@ class LogKafkaConsumer:
                 break
             except Exception as e:
                 retries -= 1
-                logger.warning(f"Kafka consumer startup failed (waiting for coordinator?): {e}. Retries left: {retries}")
-                if retries == 0: raise e
+                logger.warning(f"Kafka consumer startup failed: {e}. Retries left: {retries}")
+                if retries == 0:
+                    raise e
                 await asyncio.sleep(3)
 
         try:
