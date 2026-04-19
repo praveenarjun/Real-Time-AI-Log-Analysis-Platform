@@ -109,6 +109,11 @@ services:
       BATCH_SIZE: 5
       FLUSH_INTERVAL: 2s
     logging: *default-logging
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - log-analyzer-network
 
@@ -153,6 +158,11 @@ services:
       KAFKA_BROKERS: kafka:29092
       REDIS_URL: redis://redis:6379
     logging: *default-logging
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     networks:
       - log-analyzer-network
 
@@ -168,11 +178,18 @@ services:
         condition: service_started
       kafka:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     environment:
       AI_SERVICE_GRPC: ai-service:50051
       KAFKA_BROKERS: kafka:29092
       REDIS_URL: redis://redis:6379
     logging: *default-logging
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     networks:
       - log-analyzer-network
 
@@ -205,7 +222,7 @@ services:
     restart: unless-stopped
     depends_on:
       go-gateway:
-        condition: service_started
+        condition: service_healthy
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8080
     logging: *default-logging
@@ -220,7 +237,7 @@ services:
     profiles: ["testing"]
     depends_on:
       go-collector:
-        condition: service_started
+        condition: service_healthy
     environment:
       COLLECTOR_URL: http://go-collector:8081/api/v1/ingest/batch
       LOG_RATE: 2

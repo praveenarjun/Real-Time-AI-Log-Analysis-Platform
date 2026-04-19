@@ -119,27 +119,30 @@ jobs:
       - uses: actions/checkout@v4
       - name: Start Platform
         run: docker compose up -d
-      - name: Wait for Infrastructure
+      - name: Wait for Platform Health
         run: |
-          echo "Waiting for Kafka Group Coordinator to be ready..."
+          echo "Waiting for API Gateway to be healthy..."
           NEXT_WAIT_TIME=0
-          until docker compose exec kafka kafka-broker-api-versions --bootstrap-server localhost:9092 | grep -q "id: 1"; do
-            if [ $NEXT_WAIT_TIME -ge 60 ]; then
-              echo "❌ Kafka timed out"
+          # Wait up to 120 seconds for the entire platform to settle
+          until [ "$(docker inspect --format='{{.State.Health.Status}}' $(docker compose ps -q go-gateway))" == "healthy" ]; do
+            if [ $NEXT_WAIT_TIME -ge 120 ]; then
+              echo "❌ Platform failed to reach healthy state within 120s"
+              docker compose logs go-gateway
+              docker compose logs ai-service
               exit 1
             fi
-            echo "Waiting for Kafka metadata... ($NEXT_WAIT_TIME/60s)"
+            echo "Waiting for Gateway handshake... ($NEXT_WAIT_TIME/120s)"
             sleep 5
             NEXT_WAIT_TIME=$((NEXT_WAIT_TIME + 5))
           done
-          echo "✅ Kafka is fully operational."
-          sleep 5
+          echo "✅ Platform is fully operational."
+
       - name: Run Smoke Test
         run: |
-          # Try to connect, but show logs if it fails to speed up debugging
-          if ! curl -s --retry 10 --retry-connrefused http://localhost:8080/health | grep -q 'UP'; then
-            echo "❌ Smoke test failed! Capturing platform logs..."
-            docker compose logs
+          # The platform is healthy, so this should pass immediately
+          if ! curl -s http://localhost:8080/health | grep -q 'UP'; then
+            echo "❌ Smoke test failed! Unexpected health response."
+            docker compose logs go-gateway
             exit 1
           fi
-          echo "✅ Platform is UP and healthy."
+          echo "✅ Smoke test verified."

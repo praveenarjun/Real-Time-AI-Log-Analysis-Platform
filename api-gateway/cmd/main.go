@@ -121,11 +121,11 @@ func main() {
 				return d.DialContext(ctx, "tcp4", addr)
 			}
 
-			dbRetries := 6
+			dbRetries := 15
 			for dbRetries > 0 {
 				pool, err = pgxpool.NewWithConfig(context.Background(), dbConfig)
 				if err == nil {
-					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+					ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 					if err := pool.Ping(ctx); err == nil {
 						l.Info("Connected to PostgreSQL (Workforce DB)")
 						cancel()
@@ -136,7 +136,7 @@ func main() {
 				}
 				dbRetries--
 				l.Warn("Waiting for Database to wake up...", "retries_left", dbRetries)
-				time.Sleep(5 * time.Second)
+				time.Sleep(2 * time.Second)
 			}
 			if pool == nil {
 				log.Fatalf("CRITICAL: Failed to connect to Database after multiple attempts")
@@ -150,7 +150,7 @@ func main() {
 
 	// 6. gRPC Bridge
 	var aiClient *grpc_client.AIServiceClient
-	grpcRetries := 5
+	grpcRetries := 15
 	for grpcRetries > 0 {
 		aiClient, err = grpc_client.NewAIServiceClient(cfg.Gateway.AIServiceGRPC, l)
 		if err == nil {
@@ -161,7 +161,7 @@ func main() {
 		if grpcRetries == 0 {
 			log.Fatalf("CRITICAL: Failed to connect to AI Service gRPC: %v", err)
 		}
-		time.Sleep(5 * time.Second)
+		time.Sleep(2 * time.Second)
 	}
 	defer aiClient.Close()
 
