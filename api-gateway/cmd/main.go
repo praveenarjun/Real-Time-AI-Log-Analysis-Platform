@@ -46,16 +46,11 @@ func main() {
 	// 3. Initialize Metrics
 	m := metrics.NewMetrics("api-gateway")
 
-	// 4. Initialize Infrastructure
-
 	// 4. Initialize Infrastructure (Smart Redis Security)
-
-	// Robust URL Parsing: Extract Addr and Host for both standard and secure connections
 	redisAddr := cfg.Redis.URL
 	redisHost := ""
 	
 	if u, err := url.Parse(cfg.Redis.URL); err == nil && u.Host != "" {
-		// Strips schemes like redis:// or rediss:// for the raw Addr
 		redisAddr = u.Host
 		if h, _, err := net.SplitHostPort(u.Host); err == nil {
 			redisHost = h
@@ -63,7 +58,6 @@ func main() {
 			redisHost = u.Host
 		}
 	} else {
-		// Fallback for plain host:port strings
 		if h, _, err := net.SplitHostPort(cfg.Redis.URL); err == nil {
 			redisHost = h
 		} else {
@@ -71,9 +65,7 @@ func main() {
 		}
 	}
 
-	// Smart Redis Security Logic
 	useTLS := strings.HasPrefix(cfg.Redis.URL, "rediss://") || strings.ToLower(os.Getenv("REDIS_TLS")) == "true"
-	
 	redisOpts := &redis.Options{
 		Addr:     redisAddr,
 		Password: cfg.Redis.Password,
@@ -89,72 +81,65 @@ func main() {
 	}
 
 	rdb := redis.NewClient(redisOpts)
-
-	ctx_ping, cancel_ping := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel_ping()
-	if err := rdb.Ping(ctx_ping).Err(); err != nil {
+	ctxPing, cancelPing := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelPing()
+	if err := rdb.Ping(ctxPing).Err(); err != nil {
 		l.Error("CRITICAL: Redis connection failed", "error", err)
 	} else {
-		l.Info("Connected to Redis Cache (Protected with TLS)")
+		l.Info("Connected to Redis Cache")
 	}
 
-	// 5. Initialize	// UNIFIED DATABASE CONNECTION (Prioritizing Config DSN for stability)
+	// 5. Database Connection
 	dbURL := cfg.Database.DSN
 	if envURL := os.Getenv("DATABASE_URL"); envURL != "" && !strings.Contains(envURL, "PLACEHOLDER") {
 		dbURL = envURL
 	}
 
-	if dbURL == "" {
-		l.Error("CRITICAL: No database connection string found in config or environment.")
-	} else {
-		// AUTO-FIX: If we are targeting the direct IPv6 host, switch to the IPv4 pooler automatically.
+	if dbURL != "" {
 		if strings.Contains(dbURL, "db.ivljtbrvvhfrkauxxojn.supabase.co") {
 			l.Warn("Self-healing: Detected Direct IPv6 host. Redirecting to IPv4 Pooler Tunnel...")
 			dbURL = strings.ReplaceAll(dbURL, "db.ivljtbrvvhfrkauxxojn.supabase.co", "aws-1-ap-northeast-2.pooler.supabase.com")
 			dbURL = strings.ReplaceAll(dbURL, ":5432", ":6543")
-			
-			// Supabase Pooler REQUIRES the project-id in the username (user.project-id)
 			if strings.Contains(dbURL, "user=postgres ") || strings.Contains(dbURL, "://postgres:") {
-				l.Warn("Self-healing: Injecting Project ID into Supabase Pooler username...")
 				dbURL = strings.ReplaceAll(dbURL, "user=postgres", "user=postgres.ivljtbrvvhfrkauxxojn")
 				dbURL = strings.ReplaceAll(dbURL, "://postgres:", "://postgres.ivljtbrvvhfrkauxxojn:")
 			}
 		}
-
-		// AUTO-FIX 2: Ensure password special characters are URL-encoded (especially the '*')
 		if strings.Contains(dbURL, "*") && !strings.Contains(dbURL, "%2A") {
-			l.Warn("Self-healing: Detected unencoded star (*) in password. Encoding for URL safety...")
 			dbURL = strings.ReplaceAll(dbURL, "*", "%2A")
-		}
-
-		// Log the host we are targetting (sanitized)
-		if parts := strings.Split(dbURL, "@"); len(parts) > 1 {
-			l.Info("Targeting database host", "host", strings.Split(parts[1], "/")[0])
 		}
 	}
 
 	var pool *pgxpool.Pool
-	// FORCE IPv4: Supabase IPv6 addresses are unreachable in some Azure AKS regions.
-	dbConfig, err := pgxpool.ParseConfig(dbURL)
-	if err != nil {
-		l.Error("CRITICAL: PostgreSQL config parsing failed", "error", err)
-	} else {
-		dbConfig.ConnConfig.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
-			var d net.Dialer
-			return d.DialContext(ctx, "tcp4", addr)
-		}
-
-		pool, err = pgxpool.NewWithConfig(context.Background(), dbConfig)
+	if dbURL != "" {
+		dbConfig, err := pgxpool.ParseConfig(dbURL)
 		if err != nil {
-			l.Error("CRITICAL: PostgreSQL connection setup failed", "error", err)
+			l.Error("CRITICAL: PostgreSQL config parsing failed", "error", err)
 		} else {
-			// PRE-FLIGHT PING: Verify real connectivity. 
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			if err := pool.Ping(ctx); err != nil {
-				l.Error("CRITICAL DATABASE PING FAILED - VERIFYING IPv4 FALLBACK", "error", err)
-			} else {
-				l.Info("Connected to PostgreSQL (Workforce DB) - IPv4 Tunnel Verified")
+			dbConfig.ConnConfig.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
+				var d net.Dialer
+				return d.DialContext(ctx, "tcp4", addr)
+			}
+
+			dbRetries := 6
+			for dbRetries > 0 {
+				pool, err = pgxpool.NewWithConfig(context.Background(), dbConfig)
+				if err == nil {
+					ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+					if err := pool.Ping(ctx); err == nil {
+						l.Info("Connected to PostgreSQL (Workforce DB)")
+						cancel()
+						break
+					}
+					cancel()
+					pool.Close()
+				}
+				dbRetries--
+				l.Warn("Waiting for Database to wake up...", "retries_left", dbRetries)
+				time.Sleep(5 * time.Second)
+			}
+			if pool == nil {
+				log.Fatalf("CRITICAL: Failed to connect to Database after multiple attempts")
 			}
 			defer pool.Close()
 		}
@@ -163,127 +148,86 @@ func main() {
 	workforceRepo := repository.NewWorkforceRepository(pool, l)
 	aiRepo := repository.NewAIRepository(pool, l)
 
-	// 6. Initialize gRPC Bridge (Resilient Retry Loop)
+	// 6. gRPC Bridge
 	var aiClient *grpc_client.AIServiceClient
-	retries := 5
-	for retries > 0 {
+	grpcRetries := 5
+	for grpcRetries > 0 {
 		aiClient, err = grpc_client.NewAIServiceClient(cfg.Gateway.AIServiceGRPC, l)
 		if err == nil {
 			break
 		}
-		retries--
-		l.Warn("Failed to connect to AI Service gRPC (waiting for boot...)", "error", err, "retries_left", retries)
-		if retries == 0 {
-			log.Fatalf("CRITICAL: Failed to connect to AI Service gRPC after multiple attempts: %v", err)
+		grpcRetries--
+		l.Warn("Failed to connect to AI Service gRPC (waiting for boot...)", "error", err, "retries_left", grpcRetries)
+		if grpcRetries == 0 {
+			log.Fatalf("CRITICAL: Failed to connect to AI Service gRPC: %v", err)
 		}
 		time.Sleep(5 * time.Second)
 	}
 	defer aiClient.Close()
-	l.Info("gRPC Bridge established", "addr", cfg.Gateway.AIServiceGRPC)
 
-	// 6. Initialize WebSocket Manager & Multichannel Kafka Bridge
+	// 7. WebSocket and Kafka
 	wsManager := websocket.NewManager(rdb, aiRepo, l)
 	wsCtx, wsCancel := context.WithCancel(context.Background())
 	defer wsCancel()
 
-	// Tune into the three forensic frequencies
-	logConsumer, err := kafka.NewConsumer(cfg.Kafka, cfg.Kafka.Topics.RawLogs, l)
-	if err != nil {
-		l.Error("Failed to initialize LOG consumer", "error", err)
-	} else {
-		wsManager.AddConsumer(wsCtx, cfg.Kafka.Topics.RawLogs, models.UpdateLogBatch, logConsumer)
-		l.Info("📡 Forensic Radio: TUNED INTO LOG FREQUENCY", "topic", cfg.Kafka.Topics.RawLogs)
+	topics := []struct {
+		Name string
+		Type models.UpdateType
+	}{
+		{cfg.Kafka.Topics.RawLogs, models.UpdateLogBatch},
+		{cfg.Kafka.Topics.Anomalies, models.UpdateAnomaly},
+		{cfg.Kafka.Topics.IncidentReports, models.UpdateIncidentReport},
 	}
 
-	anomalyConsumer, err := kafka.NewConsumer(cfg.Kafka, cfg.Kafka.Topics.Anomalies, l)
-	if err != nil {
-		l.Error("Failed to initialize ANOMALY consumer", "error", err)
-	} else {
-		wsManager.AddConsumer(wsCtx, cfg.Kafka.Topics.Anomalies, models.UpdateAnomaly, anomalyConsumer)
-		l.Info("📡 Forensic Radio: TUNED INTO ANOMALY FREQUENCY", "topic", cfg.Kafka.Topics.Anomalies)
-	}
-
-	reportConsumer, err := kafka.NewConsumer(cfg.Kafka, cfg.Kafka.Topics.IncidentReports, l)
-	if err != nil {
-		l.Error("Failed to initialize REPORT consumer", "error", err)
-	} else {
-		wsManager.AddConsumer(wsCtx, cfg.Kafka.Topics.IncidentReports, models.UpdateIncidentReport, reportConsumer)
-		l.Info("📡 Forensic Radio: TUNED INTO REPORT FREQUENCY", "topic", cfg.Kafka.Topics.IncidentReports)
+	for _, t := range topics {
+		consumer, err := kafka.NewConsumer(cfg.Kafka, t.Name, l)
+		if err != nil {
+			l.Error("Failed to initialize consumer", "topic", t.Name, "error", err)
+		} else {
+			wsManager.AddConsumer(wsCtx, t.Name, t.Type, consumer)
+			l.Info("Tuned into Kafka topic", "topic", t.Name)
+		}
 	}
 
 	go wsManager.Run(wsCtx)
-	l.Info("WebSocket Forensic Radio Station initialized", "brokers", cfg.Kafka.Brokers)
 
-	// Internal Network Connectivity Check (Environment-Aware)
-	go func() {
-		// Prefer standard Docker DNS name for CI/Compose tests, fall back to K8s FQDN
-		collectorAddr := "http://go-collector/health"
-		if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
-			collectorAddr = "http://go-collector.forensic-platform.svc.cluster.local/health"
-		}
-		
-		client := http.Client{Timeout: 3 * time.Second}
-		resp, err := client.Get(collectorAddr)
-		if err != nil {
-			l.Warn("[NETWORK_DIAGNOSTIC] Internal go-collector is unreachable", "error", err, "target", collectorAddr)
-		} else {
-			l.Info("[NETWORK_DIAGNOSTIC] Internal go-collector link verified", "status", resp.Status)
-			resp.Body.Close()
-		}
-	}()
-
-	// 8. Setup Handlers
+	// 8. Handlers and Router
 	h := handlers.NewHandler(aiClient, rdb, wsManager, m, l, workforceRepo, aiRepo)
-
-	// 8. Setup Gin Router
 	router := gin.Default()
-	router.Use(gin.Recovery())
 	router.Use(middleware.CORSMiddleware())
 
-	// 8.5 Ingestion Proxy Bridge (Bypasses Rate Limiting)
-	// Routes /api/v1/ingest/* to the internal go-collector service
+	// Proxy
 	router.Any("/api/v1/ingest/*proxyPath", func(c *gin.Context) {
-		target := "http://go-collector.forensic-platform.svc.cluster.local"
-		remote, err := url.Parse(target)
-		if err != nil {
-			l.Error("Failed to parse collector proxy target", "error", err)
-			c.JSON(502, gin.H{"error": "Collector Gateway unavailable"})
-			return
+		target := "http://go-collector:8081"
+		if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
+			target = "http://go-collector.forensic-platform.svc.cluster.local"
 		}
-
+		remote, _ := url.Parse(target)
 		proxy := httputil.NewSingleHostReverseProxy(remote)
 		proxy.ServeHTTP(c.Writer, c.Request)
 	})
 
-	// Apply Redis Rate Limiting Middleware
 	router.Use(middleware.RateLimitMiddleware(rdb, l))
 
-	// Health Check
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "UP", "timestamp": time.Now()})
 	})
 
-	// API Routes
 	api := router.Group("/api/v1")
 	{
 		api.GET("/logs", h.SearchLogs)
 		api.POST("/analyze", h.ManualAnalysis)
 		api.GET("/anomalies", h.GetAnomalies)
 		api.GET("/incidents/latest", h.GetLatestIncident)
-		api.GET("/ws/stream", h.StreamLogs) // Aligned with Ingress WebSocket path
-
-		// Dashboard & Stats
+		api.GET("/ws/stream", h.StreamLogs)
 		api.GET("/stats", h.GetDashboardStats)
 		api.GET("/health", h.GetSystemHealth)
-
-		// Workforce
 		api.GET("/workforce/employees", h.ListEmployees)
 		api.POST("/workforce/employees", h.CreateEmployee)
 		api.GET("/workforce/headcount", h.GetDepartmentHeadcount)
 	}
 
-
-	// 9. Graceful Shutdown HTTP Server
+	// 9. Start Server
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Gateway.HTTPPort),
 		Handler: router,
@@ -291,25 +235,18 @@ func main() {
 
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("CRITICAL: HTTP Server failure: %v", err)
+			log.Fatalf("CRITICAL: Server failure: %v", err)
 		}
 	}()
 
 	l.Info("API Gateway is listening", "port", cfg.Gateway.HTTPPort)
 
-	// Wait for interrupt
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	l.Info("Shutting down API Gateway...")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("CRITICAL: Server forced to shutdown: %v", err)
-	}
-
-	l.Info("API Gateway exited cleanly")
+	l.Info("Shutting down...")
+	ctxShut, cancelShut := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancelShut()
+	srv.Shutdown(ctxShut)
 }
