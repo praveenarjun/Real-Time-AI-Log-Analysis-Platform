@@ -62,7 +62,17 @@ class LogKafkaConsumer:
 
     async def consume(self) -> AsyncGenerator[Dict[str, Any], None]:
         """Async generator that yields individual logs from Kafka."""
-        await self.consumer.start()
+        retries = 5
+        while retries > 0:
+            try:
+                await self.consumer.start()
+                break
+            except Exception as e:
+                retries -= 1
+                logger.warning(f"Kafka consumer startup failed (waiting for coordinator?): {e}. Retries left: {retries}")
+                if retries == 0: raise e
+                await asyncio.sleep(3)
+
         try:
             async for msg in self.consumer:
                 yield msg.value
@@ -75,7 +85,17 @@ class LogKafkaConsumer:
         self, batch_size: int, timeout_ms: int = 1000
     ) -> AsyncGenerator[List[Dict[str, Any]], None]:
         """Async generator that yields batches of logs from Kafka."""
-        await self.consumer.start()
+        retries = 5
+        while retries > 0:
+            try:
+                await self.consumer.start()
+                break
+            except Exception as e:
+                retries -= 1
+                logger.warning(f"Kafka consumer startup failed (waiting for coordinator?): {e}. Retries left: {retries}")
+                if retries == 0: raise e
+                await asyncio.sleep(3)
+
         try:
             while True:
                 # Use wait_for to implement a timeout for the batch

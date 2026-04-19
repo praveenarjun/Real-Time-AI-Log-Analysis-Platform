@@ -48,23 +48,39 @@ func main() {
 
 	// 4. Initialize Infrastructure
 
-	// Extract hostname for TLS SNI (Required for Upstash/Managed Redis)
-	redisHost := cfg.Redis.URL
-	if h, _, err := net.SplitHostPort(cfg.Redis.URL); err == nil {
-		redisHost = h
+	// 4. Initialize Infrastructure (Smart Redis Security)
+
+	// Robust URL Parsing: Extract Addr and Host for both standard and secure connections
+	redisAddr := cfg.Redis.URL
+	redisHost := ""
+	
+	if u, err := url.Parse(cfg.Redis.URL); err == nil && u.Host != "" {
+		// Strips schemes like redis:// or rediss:// for the raw Addr
+		redisAddr = u.Host
+		if h, _, err := net.SplitHostPort(u.Host); err == nil {
+			redisHost = h
+		} else {
+			redisHost = u.Host
+		}
+	} else {
+		// Fallback for plain host:port strings
+		if h, _, err := net.SplitHostPort(cfg.Redis.URL); err == nil {
+			redisHost = h
+		} else {
+			redisHost = cfg.Redis.URL
+		}
 	}
 
-	// Smart Redis Security: Only use TLS if we are connecting to a secure URL (rediss://)
-	// or if the REDIS_TLS environment variable is explicitly set to true.
+	// Smart Redis Security Logic
 	useTLS := strings.HasPrefix(cfg.Redis.URL, "rediss://") || strings.ToLower(os.Getenv("REDIS_TLS")) == "true"
 	
 	redisOpts := &redis.Options{
-		Addr:     cfg.Redis.URL,
+		Addr:     redisAddr,
 		Password: cfg.Redis.Password,
 	}
 
 	if useTLS {
-		l.Info("Enabling TLS for Redis connection...")
+		l.Info("Enabling TLS for Redis connection...", "server_name", redisHost)
 		redisOpts.TLSConfig = &tls.Config{
 			ServerName: redisHost,
 		}
@@ -147,10 +163,20 @@ func main() {
 	workforceRepo := repository.NewWorkforceRepository(pool, l)
 	aiRepo := repository.NewAIRepository(pool, l)
 
-	// 6. Initialize gRPC Bridge
-	aiClient, err := grpc_client.NewAIServiceClient(cfg.Gateway.AIServiceGRPC, l)
-	if err != nil {
-		log.Fatalf("CRITICAL: Failed to connect to AI Service gRPC: %v", err)
+	// 6. Initialize gRPC Bridge (Resilient Retry Loop)
+	var aiClient *grpc_client.AIServiceClient
+	retries := 5
+	for retries > 0 {
+		aiClient, err = grpc_client.NewAIServiceClient(cfg.Gateway.AIServiceGRPC, l)
+		if err == nil {
+			break
+		}
+		retries--
+		l.Warn("Failed to connect to AI Service gRPC (waiting for boot...)", "error", err, "retries_left", retries)
+		if retries == 0 {
+			log.Fatalf("CRITICAL: Failed to connect to AI Service gRPC after multiple attempts: %v", err)
+		}
+		time.Sleep(5 * time.Second)
 	}
 	defer aiClient.Close()
 	l.Info("gRPC Bridge established", "addr", cfg.Gateway.AIServiceGRPC)

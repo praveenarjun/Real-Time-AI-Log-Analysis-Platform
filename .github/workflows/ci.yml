@@ -115,8 +115,19 @@ jobs:
         run: docker compose up -d
       - name: Wait for Infrastructure
         run: |
-          echo "Waiting for Kafka, Loki, and Postgres to be healthy..."
-          sleep 30
+          echo "Waiting for Kafka Group Coordinator to be ready..."
+          NEXT_WAIT_TIME=0
+          until docker compose exec kafka kafka-broker-api-versions --bootstrap-server localhost:9092 | grep -q "id: 1"; do
+            if [ $NEXT_WAIT_TIME -ge 60 ]; then
+              echo "❌ Kafka timed out"
+              exit 1
+            fi
+            echo "Waiting for Kafka metadata... ($NEXT_WAIT_TIME/60s)"
+            sleep 5
+            NEXT_WAIT_TIME=$((NEXT_WAIT_TIME + 5))
+          done
+          echo "✅ Kafka is fully operational."
+          sleep 5
       - name: Run Smoke Test
         run: |
           # Try to connect, but show logs if it fails to speed up debugging
