@@ -119,4 +119,10 @@ jobs:
           sleep 30
       - name: Run Smoke Test
         run: |
-          curl -s --retry 5 --retry-connrefused http://localhost:8080/health | grep -q 'UP'
+          # Try to connect, but show logs if it fails to speed up debugging
+          if ! curl -s --retry 10 --retry-connrefused http://localhost:8080/health | grep -q 'UP'; then
+            echo "❌ Smoke test failed! Capturing platform logs..."
+            docker compose logs
+            exit 1
+          fi
+          echo "✅ Platform is UP and healthy."

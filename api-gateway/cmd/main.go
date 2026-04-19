@@ -54,13 +54,25 @@ func main() {
 		redisHost = h
 	}
 
-	rdb := redis.NewClient(&redis.Options{
+	// Smart Redis Security: Only use TLS if we are connecting to a secure URL (rediss://)
+	// or if the REDIS_TLS environment variable is explicitly set to true.
+	useTLS := strings.HasPrefix(cfg.Redis.URL, "rediss://") || strings.ToLower(os.Getenv("REDIS_TLS")) == "true"
+	
+	redisOpts := &redis.Options{
 		Addr:     cfg.Redis.URL,
 		Password: cfg.Redis.Password,
-		TLSConfig: &tls.Config{
+	}
+
+	if useTLS {
+		l.Info("Enabling TLS for Redis connection...")
+		redisOpts.TLSConfig = &tls.Config{
 			ServerName: redisHost,
-		},
-	})
+		}
+	} else {
+		l.Info("Connecting to Redis via plain TCP (No TLS)...")
+	}
+
+	rdb := redis.NewClient(redisOpts)
 
 	ctx_ping, cancel_ping := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel_ping()
@@ -176,13 +188,18 @@ func main() {
 	go wsManager.Run(wsCtx)
 	l.Info("WebSocket Forensic Radio Station initialized", "brokers", cfg.Kafka.Brokers)
 
-	// Internal Network Connectivity Check
+	// Internal Network Connectivity Check (Environment-Aware)
 	go func() {
-		collectorAddr := "http://go-collector.forensic-platform.svc.cluster.local/health"
-		client := http.Client{Timeout: 2 * time.Second}
+		// Prefer standard Docker DNS name for CI/Compose tests, fall back to K8s FQDN
+		collectorAddr := "http://go-collector/health"
+		if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
+			collectorAddr = "http://go-collector.forensic-platform.svc.cluster.local/health"
+		}
+		
+		client := http.Client{Timeout: 3 * time.Second}
 		resp, err := client.Get(collectorAddr)
 		if err != nil {
-			l.Warn("[NETWORK_DIAGNOSTIC] Internal go-collector is unreachable from Gateway", "error", err, "target", collectorAddr)
+			l.Warn("[NETWORK_DIAGNOSTIC] Internal go-collector is unreachable", "error", err, "target", collectorAddr)
 		} else {
 			l.Info("[NETWORK_DIAGNOSTIC] Internal go-collector link verified", "status", resp.Status)
 			resp.Body.Close()
