@@ -62,14 +62,14 @@ func main() {
 	redisHost := ""
 	if u, err := url.Parse(cfg.Redis.URL); err == nil && u.Host != "" {
 		redisAddr = u.Host
-		if h, _, err := net.SplitHostPort(u.Host); err == nil {
-			redisHost = h
+		if rHost, _, err := net.SplitHostPort(u.Host); err == nil {
+			redisHost = rHost
 		} else {
 			redisHost = u.Host
 		}
 	} else {
-		if h, _, err := net.SplitHostPort(cfg.Redis.URL); err == nil {
-			redisHost = h
+		if rHost, _, err := net.SplitHostPort(cfg.Redis.URL); err == nil {
+			redisHost = rHost
 		} else {
 			redisHost = cfg.Redis.URL
 		}

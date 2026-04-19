@@ -1,10 +1,17 @@
-# Central configuration for all Go services
-server:
-  gatewayPort: 8080
-  collectorPort: 8081
-  alerterPort: 8082
-  workforcePort: 8082
-  aiServicePort: 8000
+# Central configuration for all AI forensic microservices
+# Flat schema aligned with Go internal structs for production stability.
+
+gateway:
+  http_port: 8080
+  ai_service_grpc: "ai-service:50051"
+
+collector:
+  http_port: 8081
+  batch_size: 5
+  flush_interval: 2
+
+workforce:
+  http_port: 8082
 
 database:
   dsn: "postgresql://postgres.ivljtbrvvhfrkauxxojn:raveen%2A4125@aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require"
@@ -13,12 +20,18 @@ kafka:
   brokers:
     - "kafka:29092"
   tls: true
+  topics:
+    raw_logs: "raw-logs"
+    analyzed_logs: "analyzed-logs"
+    anomalies: "anomalies"
+    alerts: "alerts"
+    incident_reports: "incident-reports"
 
 redis:
   url: "redis://redis:6379"
 
-elasticsearch:
-  url: "http://elasticsearch:9200"
+metrics:
+  http_port: 9090
 
 logging:
   level: "info"
