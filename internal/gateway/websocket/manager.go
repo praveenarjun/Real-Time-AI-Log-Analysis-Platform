@@ -160,11 +160,15 @@ func (m *Manager) consumeTopic(ctx context.Context, topic string, topicType mode
 				switch topicType {
 				case models.UpdateAnomaly:
 					if anomaly, ok := payload.(models.Anomaly); ok {
-						m.aiRepo.SaveAnomaly(ctx, anomaly)
+						if err := m.aiRepo.SaveAnomaly(ctx, anomaly); err != nil {
+							m.logger.Error("Background persistence failed for anomaly", "error", err)
+						}
 					}
 				case models.UpdateIncidentReport:
 					if report, ok := payload.(models.IncidentReport); ok {
-						m.aiRepo.SaveIncident(ctx, report)
+						if err := m.aiRepo.SaveIncident(ctx, report); err != nil {
+							m.logger.Error("Background persistence failed for report", "error", err)
+						}
 					}
 				}
 			}

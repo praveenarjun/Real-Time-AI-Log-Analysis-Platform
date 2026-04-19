@@ -148,9 +148,15 @@ func (r *AIRepository) GetLatestIncident(ctx context.Context) (*models.IncidentR
 		return nil, err
 	}
 
-	json.Unmarshal(timelineRaw, &report.Timeline)
-	json.Unmarshal(recommendationsRaw, &report.Recommendations)
-	json.Unmarshal(actionItemsRaw, &report.ActionItems)
+	if err := json.Unmarshal(timelineRaw, &report.Timeline); err != nil {
+		r.logger.Warn("Failed to unmarshal timeline", "error", err)
+	}
+	if err := json.Unmarshal(recommendationsRaw, &report.Recommendations); err != nil {
+		r.logger.Warn("Failed to unmarshal recommendations", "error", err)
+	}
+	if err := json.Unmarshal(actionItemsRaw, &report.ActionItems); err != nil {
+		r.logger.Warn("Failed to unmarshal action items", "error", err)
+	}
 
 	return &report, nil
 }
