@@ -1,8 +1,7 @@
-import json
 import logging
 import httpx
 from typing import List, Dict, Any, Optional
-from langchain_core.messages import BaseMessage, AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import BaseMessage, AIMessage
 
 logger = logging.getLogger("ai-service.foundry")
 
@@ -94,14 +93,17 @@ class DirectFoundryChatModel:
             if isinstance(obj, dict):
                 for key in ["text", "content"]:
                     res = find_string(obj.get(key))
-                    if res: return res
+                    if res:
+                        return res
                 for val in obj.values():
                     res = find_string(val)
-                    if res: return res
+                    if res:
+                        return res
             if isinstance(obj, list):
                 for item in obj:
                     res = find_string(item)
-                    if res: return res
+                    if res:
+                        return res
             return None
 
         content = find_string(data)
