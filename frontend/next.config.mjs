@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Disabling Static Export to allow for dynamic rendering and runtime env variables
-  // output: 'export',
+  output: 'export',
   // Disabling image optimization for performance/hosting flexibility
   images: {
     unoptimized: true,
