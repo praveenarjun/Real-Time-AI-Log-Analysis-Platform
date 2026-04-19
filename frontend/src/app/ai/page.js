@@ -346,12 +346,12 @@ export default function AIForensicsStudio() {
               </div>
            </GlassCard>
 
-           <GlassCard title="Active Agents">
+           <GlassCard title="Active Distributed Agents">
               <div className="space-y-6">
                  {[
-                   { name: "REASONER-NODE", status: analyzing ? "Analyzing..." : "Idle", risk: logs.length > 50 ? "High" : "Low" },
-                   { name: "PATTERN-BRAIN", status: wsStatus === "connected" ? "Live" : "Standby", risk: "Low" },
-                   { name: "TACTICAL-GO", status: "Active", risk: "Low" },
+                   { name: `REASONER-${nodeId}`, status: analyzing ? "Direct_Audit..." : "Idle", risk: report?.severity === 'CRITICAL' ? "High" : "Low" },
+                   { name: "PATTERN-MESH", status: wsStatus === "connected" ? "Live_Stream" : "Syncing...", risk: "Low" },
+                   { name: "TELEMETRY-GO", status: isReady ? "Active" : "Handshaking", risk: "Low" },
                  ].map((node, i) => (
                     <div key={i} className="flex items-center justify-between group">
                        <div className="space-y-1">
