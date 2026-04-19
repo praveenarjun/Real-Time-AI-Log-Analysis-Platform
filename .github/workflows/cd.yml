@@ -154,6 +154,7 @@ jobs:
           kubectl rollout status deployment go-collector -n forensic-platform
           kubectl rollout status deployment ai-service -n forensic-platform
           kubectl rollout status deployment frontend -n forensic-platform
+          kubectl rollout restart deployment frontend -n forensic-platform
           kubectl rollout status deployment workforce-service -n forensic-platform
 
   deploy-production:
