@@ -151,7 +151,8 @@ func main() {
 
 		// C. WebSocket and Kafka
 		wsManager = websocket.NewManager(rdb, aiRepo, l)
-		wsCtx, _ := context.WithCancel(context.Background())
+		wsCtx, wsCancel := context.WithCancel(context.Background())
+		defer wsCancel()
 		topics := []struct {
 			Name string
 			Type models.UpdateType

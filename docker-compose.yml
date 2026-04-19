@@ -110,7 +110,7 @@ services:
       FLUSH_INTERVAL: 2s
     logging: *default-logging
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8081/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -159,7 +159,7 @@ services:
       REDIS_URL: redis://redis:6379
     logging: *default-logging
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/health"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -186,7 +186,7 @@ services:
       REDIS_URL: redis://redis:6379
     logging: *default-logging
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/health"]
       interval: 10s
       timeout: 5s
       retries: 10
