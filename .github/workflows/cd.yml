@@ -38,45 +38,73 @@ jobs:
         run: |
           az acr login --name ${{ env.ACR_NAME }}
 
-      - name: Build & Push Services
-        run: |
-          SHA=${{ github.sha }}
-          REGISTRY=${{ env.REGISTRY }}
+      - name: Build & Push Gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: api-gateway/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/go-gateway:${{ github.sha }},${{ env.REGISTRY }}/go-gateway:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-          # Build and push Gateway
-          docker build -t $REGISTRY/go-gateway:$SHA -t $REGISTRY/go-gateway:latest -f api-gateway/Dockerfile .
-          docker push $REGISTRY/go-gateway:$SHA
-          docker push $REGISTRY/go-gateway:latest
+      - name: Build & Push Collector
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: log-collector/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/go-collector:${{ github.sha }},${{ env.REGISTRY }}/go-collector:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-          # Build and push Collector
-          docker build -t $REGISTRY/go-collector:$SHA -t $REGISTRY/go-collector:latest -f log-collector/Dockerfile .
-          docker push $REGISTRY/go-collector:$SHA
-          docker push $REGISTRY/go-collector:latest
+      - name: Build & Push AI Service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./python-ai-service
+          push: true
+          tags: ${{ env.REGISTRY }}/python-ai:${{ github.sha }},${{ env.REGISTRY }}/python-ai:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-          # Build and push AI Service
-          docker build -t $REGISTRY/python-ai:$SHA -t $REGISTRY/python-ai:latest ./python-ai-service
-          docker push $REGISTRY/python-ai:$SHA
-          docker push $REGISTRY/python-ai:latest
+      - name: Build & Push Log Simulator
+        uses: docker/build-push-action@v5
+        with:
+          context: ./log-simulator
+          push: true
+          tags: ${{ env.REGISTRY }}/log-simulator:${{ github.sha }},${{ env.REGISTRY }}/log-simulator:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-          # Build and push Log Simulator
-          docker build -t $REGISTRY/log-simulator:$SHA -t $REGISTRY/log-simulator:latest ./log-simulator
-          docker push $REGISTRY/log-simulator:$SHA
-          docker push $REGISTRY/log-simulator:latest
+      - name: Build & Push Alerter
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: alerting/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/go-alerter:${{ github.sha }},${{ env.REGISTRY }}/go-alerter:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-          # Build and push Alerter
-          docker build -t $REGISTRY/go-alerter:$SHA -t $REGISTRY/go-alerter:latest -f alerting/Dockerfile .
-          docker push $REGISTRY/go-alerter:$SHA
-          docker push $REGISTRY/go-alerter:latest
+      - name: Build & Push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/frontend:${{ github.sha }},${{ env.REGISTRY }}/frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-          # Build and push Frontend
-          docker build -t $REGISTRY/frontend:$SHA -t $REGISTRY/frontend:latest -f frontend/Dockerfile ./frontend
-          docker push $REGISTRY/frontend:$SHA
-          docker push $REGISTRY/frontend:latest
-
-          # Build and push Workforce Service
-          docker build -t $REGISTRY/workforce-service:$SHA -t $REGISTRY/workforce-service:latest -f workforce-service/Dockerfile .
-          docker push $REGISTRY/workforce-service:$SHA
-          docker push $REGISTRY/workforce-service:latest
+      - name: Build & Push workforce-service
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: workforce-service/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/workforce-service:${{ github.sha }},${{ env.REGISTRY }}/workforce-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy-staging:
     name: Deploy to Staging

@@ -93,17 +93,23 @@ jobs:
           context: .
           file: api-gateway/Dockerfile
           push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - name: Build Collector
         uses: docker/build-push-action@v5
         with:
           context: .
           file: log-collector/Dockerfile
           push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - name: Build AI Service
         uses: docker/build-push-action@v5
         with:
           context: ./python-ai-service
           push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   integration-test:
     name: Integration Tests
