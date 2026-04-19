@@ -248,5 +248,8 @@ func main() {
 	l.Info("Shutting down...")
 	ctxShut, cancelShut := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelShut()
-	srv.Shutdown(ctxShut)
+	if err := srv.Shutdown(ctxShut); err != nil {
+		l.Error("CRITICAL: Server forced to shutdown", "error", err)
+	}
+	l.Info("API Gateway exited cleanly")
 }
