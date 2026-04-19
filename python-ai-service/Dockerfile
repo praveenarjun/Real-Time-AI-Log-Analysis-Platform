@@ -23,7 +23,7 @@ COPY . .
 
 # Generate gRPC code on build
 # This ensures Python and Go types are perfectly synchronized
-RUN python -m grpc_tools.protoc -Iproto --python_out=. --grpc_python_out=. proto/ai_analysis.proto
+RUN python -m grpc_tools.protoc -Iproto --python_out=. --grpc_python_out=. proto/ai_service.proto
 
 # --- Runtime Configuration ---
 

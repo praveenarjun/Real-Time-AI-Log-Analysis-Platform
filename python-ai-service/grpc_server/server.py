@@ -14,8 +14,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # python -m grpc_tools.protoc -I../go-services/proto --python_out=. --grpc_python_out=. ../go-services/proto/ai_analysis.proto
 
 try:
-    import ai_analysis_pb2
-    import ai_analysis_pb2_grpc
+    import ai_service_pb2
+    import ai_service_pb2_grpc
 except ImportError as e:
     logger = logging.getLogger("ai-service.grpc")
     logger.error(f"gRPC generated files import failed: {e}")
@@ -24,7 +24,7 @@ except ImportError as e:
 logger = logging.getLogger("ai-service.grpc")
 
 
-class AIAnalysisServiceServicer(ai_analysis_pb2_grpc.AIAnalysisServiceServicer):
+class AIAnalysisServiceServicer(ai_service_pb2_grpc.AIAnalysisServiceServicer):
     def __init__(self, supervisor):
         self.supervisor = supervisor
 
@@ -46,7 +46,7 @@ class AIAnalysisServiceServicer(ai_analysis_pb2_grpc.AIAnalysisServiceServicer):
         result = self.supervisor.run(log_batch)
 
         # 3. Convert Dict -> Proto
-        return ai_analysis_pb2.AnalysisResponse(
+        return ai_service_pb2.AnalysisResponse(
             anomalies=[
                 self._dict_to_anomaly_proto(a) for a in result.get("anomalies", [])
             ],
@@ -76,10 +76,10 @@ class AIAnalysisServiceServicer(ai_analysis_pb2_grpc.AIAnalysisServiceServicer):
         result = self.supervisor.run({"report_request": True})
         report = result.get("incident_report", {})
         
-        return ai_analysis_pb2.IncidentReport(
+        return ai_service_pb2.IncidentReport(
             id=report.get("id", "REP-" + str(int(time.time()))),
             title=report.get("title", "Forensic Incident Report"),
-            severity=ai_analysis_pb2.Severity.Value(report.get("severity", "MEDIUM")),
+            severity=ai_service_pb2.Severity.Value(report.get("severity", "MEDIUM")),
             executive_summary=report.get("executive_summary", "Summary not available."),
             root_cause_analysis=report.get("root_cause_analysis", "Investigating..."),
             affected_services=report.get("affected_services", []),
@@ -101,7 +101,7 @@ class AIAnalysisServiceServicer(ai_analysis_pb2_grpc.AIAnalysisServiceServicer):
         
         for chunk in chunks:
             time.sleep(0.2)
-            yield ai_analysis_pb2.ChatResponse(content=chunk, is_final=(chunk == chunks[-1]))
+            yield ai_service_pb2.ChatResponse(content=chunk, is_final=(chunk == chunks[-1]))
 
     def PredictFailures(self, request, context):
         """Predicts potential future failures based on current log trends."""
@@ -112,18 +112,18 @@ class AIAnalysisServiceServicer(ai_analysis_pb2_grpc.AIAnalysisServiceServicer):
         
         proto_preds = []
         for p in preds:
-            proto_preds.append(ai_analysis_pb2.Prediction(
+            proto_preds.append(ai_service_pb2.Prediction(
                 service_name=request.service_name,
                 failure_type=p.get("type", "Saturation"),
                 probability=p.get("confidence", 0.5),
                 recommendation=p.get("mitigation", "Monitor dashboard")
             ))
             
-        return ai_analysis_pb2.PredictionResponse(predictions=proto_preds)
+        return ai_service_pb2.PredictionResponse(predictions=proto_preds)
 
     def HealthCheck(self, request, context):
         """Standard health check for the AI service."""
-        return ai_analysis_pb2.HealthCheckResponse(
+        return ai_service_pb2.HealthCheckResponse(
             status="SERVING",
             details={"provider": settings.LLM_PROVIDER, "model": settings.LLM_MODEL}
         )
@@ -144,7 +144,7 @@ class AIAnalysisServiceServicer(ai_analysis_pb2_grpc.AIAnalysisServiceServicer):
         }
 
     def _dict_to_anomaly_proto(self, a_dict):
-        return ai_analysis_pb2.AnomalyResult(
+        return ai_service_pb2.AnomalyResult(
             id=a_dict.get("id", ""),
             type=a_dict.get("type", "PATTERN_ANOMALY"),
             severity=a_dict.get("severity", "MEDIUM"),
@@ -157,7 +157,7 @@ class AIAnalysisServiceServicer(ai_analysis_pb2_grpc.AIAnalysisServiceServicer):
 async def start_grpc_server(supervisor, port: int = 50051):
     """Starts the gRPC server in an async-friendly way."""
     server = grpc.aio.server(futures.ThreadPoolExecutor(max_workers=10))
-    ai_analysis_pb2_grpc.add_AIAnalysisServiceServicer_to_server(
+    ai_service_pb2_grpc.add_AIAnalysisServiceServicer_to_server(
         AIAnalysisServiceServicer(supervisor), server
     )
 
