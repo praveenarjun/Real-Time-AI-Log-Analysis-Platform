@@ -13,7 +13,32 @@ export function ForensicProvider({ children }) {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const fetchInitialData = async () => {
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://back.praveen-challa.tech";
+      console.log("Forensic Context: Syncing with Archival Intelligence Hub...");
+      
+      const [anomalyRes, reportRes] = await Promise.all([
+        fetch(`${apiBase}/api/v1/anomalies`),
+        fetch(`${apiBase}/api/v1/incidents/latest`)
+      ]);
+
+      if (anomalyRes.ok) {
+        const data = await anomalyRes.json();
+        setAnomalies(data.anomalies || []);
+      }
+
+      if (reportRes.ok) {
+        const data = await reportRes.json();
+        setActiveReport(data.report);
+      }
+    } catch (err) {
+      console.error("Forensic Context: Failed to sync archival data", err);
+    }
+  };
+
   useEffect(() => {
+    fetchInitialData();
     let socket;
     let reconnectTimer;
 

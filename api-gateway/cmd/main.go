@@ -133,6 +133,7 @@ func main() {
 	}
 
 	workforceRepo := repository.NewWorkforceRepository(pool, l)
+	aiRepo := repository.NewAIRepository(pool, l)
 
 	// 6. Initialize gRPC Bridge
 	aiClient, err := grpc_client.NewAIServiceClient(cfg.Gateway.AIServiceGRPC, l)
@@ -143,7 +144,7 @@ func main() {
 	l.Info("gRPC Bridge established", "addr", cfg.Gateway.AIServiceGRPC)
 
 	// 6. Initialize WebSocket Manager & Multichannel Kafka Bridge
-	wsManager := websocket.NewManager(rdb, l)
+	wsManager := websocket.NewManager(rdb, aiRepo, l)
 	wsCtx, wsCancel := context.WithCancel(context.Background())
 	defer wsCancel()
 
@@ -189,7 +190,7 @@ func main() {
 	}()
 
 	// 8. Setup Handlers
-	h := handlers.NewHandler(aiClient, rdb, wsManager, m, l, workforceRepo)
+	h := handlers.NewHandler(aiClient, rdb, wsManager, m, l, workforceRepo, aiRepo)
 
 	// 8. Setup Gin Router
 	router := gin.Default()
@@ -224,6 +225,8 @@ func main() {
 	{
 		api.GET("/logs", h.SearchLogs)
 		api.POST("/analyze", h.ManualAnalysis)
+		api.GET("/anomalies", h.GetAnomalies)
+		api.GET("/incidents/latest", h.GetLatestIncident)
 		api.GET("/ws/stream", h.StreamLogs) // Aligned with Ingress WebSocket path
 
 		// Dashboard & Stats

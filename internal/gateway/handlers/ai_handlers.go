@@ -38,8 +38,19 @@ func (h *Handler) AnalyzeLogs(c *gin.Context) {
 }
 
 func (h *Handler) GetAnomalies(c *gin.Context) {
-	h.logger.Info("Searching anomalies")
-	c.JSON(http.StatusOK, gin.H{"anomalies": []interface{}{}})
+	h.logger.Info("Fetching recent anomalies from database")
+	
+	anomalies, err := h.aiRepo.GetRecentAnomalies(c.Request.Context(), 50)
+	if err != nil {
+		h.logger.Error("Failed to fetch anomalies", "error", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{
+		"status":    "success",
+		"anomalies": anomalies,
+	})
 }
 
 func (h *Handler) GetAnomalyByID(c *gin.Param) {
@@ -56,6 +67,22 @@ func (h *Handler) GenerateReport(c *gin.Context) {
 	if err != nil {
 		h.logger.Error("Failed to generate report", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "AI reporting service unavailable"})
+		return
+	}
+	
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"report": report,
+	})
+}
+
+func (h *Handler) GetLatestIncident(c *gin.Context) {
+	h.logger.Info("Fetching latest forensic incident from database")
+	
+	report, err := h.aiRepo.GetLatestIncident(c.Request.Context())
+	if err != nil {
+		h.logger.Error("Failed to fetch latest incident", "error", err)
+		c.JSON(http.StatusNotFound, gin.H{"error": "No reports found"})
 		return
 	}
 	

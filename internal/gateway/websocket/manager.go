@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/websocket"
 	"praveenchalla.local/ai-log-analyzer/internal/kafka"
 	"praveenchalla.local/ai-log-analyzer/internal/models"
+	"praveenchalla.local/ai-log-analyzer/internal/repository"
 )
 
 var upgrader = websocket.Upgrader{
@@ -31,15 +32,17 @@ type Manager struct {
 	logger      *slog.Logger
 	consumers   map[string]*kafka.Consumer
 	redisClient *redis.Client
+	aiRepo      *repository.AIRepository
 }
 
-func NewManager(rdb *redis.Client, l *slog.Logger) *Manager {
+func NewManager(rdb *redis.Client, aiRepo *repository.AIRepository, l *slog.Logger) *Manager {
 	return &Manager{
 		clients:     make(map[*websocket.Conn]bool),
 		broadcast:   make(chan models.RealTimeUpdate, 1000),
 		logger:      l,
 		consumers:   make(map[string]*kafka.Consumer),
 		redisClient: rdb,
+		aiRepo:      aiRepo,
 	}
 }
 
@@ -138,7 +141,7 @@ func (m *Manager) consumeTopic(ctx context.Context, topic string, topicType mode
 		if payload != nil {
 			m.logger.Debug("WebSocket Manager: Broadcasting update", "topic", topic, "type", topicType)
 
-			// Persistence Layer: Store in Redis Ring Buffer (Bypassed if Quota Hit)
+			// Persistence Layer 1: Store in Redis Ring Buffer (For instant UI responsiveness)
 			if m.redisClient != nil {
 				data, _ := json.Marshal(payload)
 				key := "v2_recent_logs"
@@ -149,8 +152,21 @@ func (m *Manager) consumeTopic(ctx context.Context, topic string, topicType mode
 				pipe := m.redisClient.Pipeline()
 				pipe.LPush(ctx, key, string(data))
 				pipe.LTrim(ctx, key, 0, 999)
-				// We execute the pipeline but ignore errors to prevent cloud quota from blocking the live stream
 				_, _ = pipe.Exec(ctx)
+			}
+
+			// Persistence Layer 2: Long-term Storage in PostgreSQL (For page refresh survival)
+			if m.aiRepo != nil {
+				switch topicType {
+				case models.UpdateAnomaly:
+					if anomaly, ok := payload.(models.Anomaly); ok {
+						m.aiRepo.SaveAnomaly(ctx, anomaly)
+					}
+				case models.UpdateIncidentReport:
+					if report, ok := payload.(models.IncidentReport); ok {
+						m.aiRepo.SaveIncident(ctx, report)
+					}
+				}
 			}
 
 			m.broadcast <- models.RealTimeUpdate{

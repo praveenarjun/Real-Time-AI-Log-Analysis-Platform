@@ -17,6 +17,7 @@ type Handler struct {
 	metrics     *metrics.Metrics
 	logger      *slog.Logger
 	repo        *repository.WorkforceRepository
+	aiRepo      *repository.AIRepository
 }
 
 func NewHandler(
@@ -26,6 +27,7 @@ func NewHandler(
 	metrics *metrics.Metrics,
 	logger *slog.Logger,
 	repo *repository.WorkforceRepository,
+	aiRepo *repository.AIRepository,
 ) *Handler {
 	return &Handler{
 		aiClient:    aiClient,
@@ -34,5 +36,6 @@ func NewHandler(
 		metrics:     metrics,
 		logger:      logger,
 		repo:        repo,
+		aiRepo:      aiRepo,
 	}
 }
