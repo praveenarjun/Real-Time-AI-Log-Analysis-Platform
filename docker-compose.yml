@@ -98,8 +98,8 @@ services:
       - "8081:8081"
     restart: unless-stopped
     depends_on:
-      kafka:
-        condition: service_healthy
+      - kafka
+      - redis
     environment:
       KAFKA_BROKERS: kafka:29092
       KAFKA_USER: ${KAFKA_USER:-}
@@ -113,7 +113,7 @@ services:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8081/health"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
     networks:
       - log-analyzer-network
 
@@ -125,8 +125,7 @@ services:
       - "8082:8082"
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
     environment:
       DATABASE_URL: postgres://user:password@postgres:5432/workforce_db
       KAFKA_BROKERS: kafka:29092
@@ -143,10 +142,8 @@ services:
       - "50051:50051"
     restart: unless-stopped
     depends_on:
-      kafka:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - kafka
+      - redis
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY}
@@ -162,7 +159,7 @@ services:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/health"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 15
     networks:
       - log-analyzer-network
 
@@ -174,12 +171,10 @@ services:
       - "8080:8080"
     restart: unless-stopped
     depends_on:
-      ai-service:
-        condition: service_started
-      kafka:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
+      - ai-service
+      - kafka
+      - postgres
+      - redis
     environment:
       AI_SERVICE_GRPC: ai-service:50051
       KAFKA_BROKERS: kafka:29092
@@ -189,7 +184,7 @@ services:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/health"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 20
     networks:
       - log-analyzer-network
 
@@ -199,8 +194,8 @@ services:
       dockerfile: alerting/Dockerfile
     restart: unless-stopped
     depends_on:
-      kafka:
-        condition: service_healthy
+      - kafka
+      - redis
     environment:
       REDIS_URL: redis:6379
       KAFKA_BROKERS: kafka:29092
@@ -221,8 +216,7 @@ services:
       - "3000:3000"
     restart: unless-stopped
     depends_on:
-      go-gateway:
-        condition: service_started
+      - go-gateway
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8080
     logging: *default-logging
@@ -236,8 +230,7 @@ services:
       dockerfile: Dockerfile
     profiles: ["testing"]
     depends_on:
-      go-collector:
-        condition: service_started
+      - go-collector
     environment:
       COLLECTOR_URL: http://go-collector:8081/api/v1/ingest/batch
       LOG_RATE: 2
@@ -268,8 +261,6 @@ services:
       - grafana_data:/var/lib/grafana
     networks:
       - log-analyzer-network
-
-  # (log-indexer has been decommissioned following Elasticsearch removal)
 
 networks:
   log-analyzer-network:

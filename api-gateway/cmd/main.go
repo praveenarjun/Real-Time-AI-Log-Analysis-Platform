@@ -35,7 +35,7 @@ import (
 func main() {
 	// 1. Initialize Logger
 	l := logger.NewLogger("api-gateway", "INFO")
-	l.Info("Starting AI Log Analysis API Gateway...")
+	l.Info("🚀 Booting AI Log Analysis Gateway...")
 
 	// 2. Load Configuration
 	cfg, err := config.LoadConfig("config/config.yaml")
@@ -46,7 +46,7 @@ func main() {
 	// 3. Initialize Metrics
 	m := metrics.NewMetrics("api-gateway")
 
-	// 4. Shared State for Async Readiness
+	// 4. Shared State and Lifecycle Management
 	var (
 		isReady       atomic.Bool
 		h             *handlers.Handler
@@ -57,7 +57,11 @@ func main() {
 		wsManager     *websocket.Manager
 	)
 
-	// 5. Initialize Redis (Required for Rate Limiting & WebSockets)
+	// Central Lifecycle Context (Keeps WebSocket and Background handshakes alive)
+	appCtx, appCancel := context.WithCancel(context.Background())
+	defer appCancel()
+
+	// 5. Initialize Redis (Required immediately for Middleware)
 	redisAddr := cfg.Redis.URL
 	redisHost := ""
 	if u, err := url.Parse(cfg.Redis.URL); err == nil && u.Host != "" {
@@ -82,46 +86,34 @@ func main() {
 	}
 
 	if useTLS {
-		l.Info("Enabling TLS for Redis connection...", "server_name", redisHost)
+		l.Info("🔒 Enabling TLS for Redis connection...", "server_name", redisHost)
 		redisOpts.TLSConfig = &tls.Config{ServerName: redisHost}
 	}
 
 	rdb = redis.NewClient(redisOpts)
 
-	// 6. Background Initialization (Non-blocking)
+	// 6. Background Handshake Engine (Non-blocking)
 	go func() {
-		l.Info("Background initialization started...")
+		l.Info("⏳ Starting background connectivity handshake...")
 
-		// A. Database Connection
+		// A. Database Connection (Workforce DB)
 		dbURL := cfg.Database.DSN
 		if envURL := os.Getenv("DATABASE_URL"); envURL != "" && !strings.Contains(envURL, "PLACEHOLDER") {
 			dbURL = envURL
 		}
 		if dbURL != "" {
-			if strings.Contains(dbURL, "db.ivljtbrvvhfrkauxxojn.supabase.co") {
-				dbURL = strings.ReplaceAll(dbURL, "db.ivljtbrvvhfrkauxxojn.supabase.co", "aws-1-ap-northeast-2.pooler.supabase.com")
-				dbURL = strings.ReplaceAll(dbURL, ":5432", ":6543")
-				if strings.Contains(dbURL, "user=postgres ") || strings.Contains(dbURL, "://postgres:") {
-					dbURL = strings.ReplaceAll(dbURL, "user=postgres", "user=postgres.ivljtbrvvhfrkauxxojn")
-					dbURL = strings.ReplaceAll(dbURL, "://postgres:", "://postgres.ivljtbrvvhfrkauxxojn:")
-				}
-			}
-			if strings.Contains(dbURL, "*") && !strings.Contains(dbURL, "%2A") {
-				dbURL = strings.ReplaceAll(dbURL, "*", "%2A")
-			}
-
 			dbConfig, _ := pgxpool.ParseConfig(dbURL)
 			if dbConfig != nil {
 				dbConfig.ConnConfig.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
 					var d net.Dialer
 					return d.DialContext(ctx, "tcp4", addr)
 				}
-				dbRetries := 30
+				dbRetries := 60 // Increased for extreme CI lag
 				for dbRetries > 0 {
-					pool, err := pgxpool.NewWithConfig(context.Background(), dbConfig)
+					pool, err := pgxpool.NewWithConfig(appCtx, dbConfig)
 					if err == nil {
-						if err := pool.Ping(context.Background()); err == nil {
-							l.Info("Connected to PostgreSQL (Workforce DB)")
+						if err := pool.Ping(appCtx); err == nil {
+							l.Info("✅ Database handshaked successfully")
 							workforceRepo = repository.NewWorkforceRepository(pool, l)
 							aiRepo = repository.NewAIRepository(pool, l)
 							break
@@ -129,30 +121,28 @@ func main() {
 						pool.Close()
 					}
 					dbRetries--
-					l.Warn("Waiting for DB...", "retries_left", dbRetries)
+					l.Warn("⏳ DB unavailable, retrying...", "retries_left", dbRetries)
 					time.Sleep(2 * time.Second)
 				}
 			}
 		}
 
-		// B. gRPC Bridge
-		grpcRetries := 30
+		// B. AI Service gRPC
+		grpcRetries := 60
 		for grpcRetries > 0 {
 			var gerr error
 			aiClient, gerr = grpc_client.NewAIServiceClient(cfg.Gateway.AIServiceGRPC, l)
 			if gerr == nil {
-				l.Info("AI Service gRPC Bridge connected")
+				l.Info("✅ AI Service gRPC bridge established")
 				break
 			}
 			grpcRetries--
-			l.Warn("Waiting for AI Service...", "retries_left", grpcRetries)
+			l.Warn("⏳ AI Service gRPC missing, retrying...", "target", cfg.Gateway.AIServiceGRPC, "retries_left", grpcRetries)
 			time.Sleep(2 * time.Second)
 		}
 
-		// C. WebSocket and Kafka
+		// C. Kafka Real-time Feed
 		wsManager = websocket.NewManager(rdb, aiRepo, l)
-		wsCtx, wsCancel := context.WithCancel(context.Background())
-		defer wsCancel()
 		topics := []struct {
 			Name string
 			Type models.UpdateType
@@ -165,23 +155,23 @@ func main() {
 		for _, t := range topics {
 			consumer, err := kafka.NewConsumer(cfg.Kafka, t.Name, l)
 			if err == nil {
-				wsManager.AddConsumer(wsCtx, t.Name, t.Type, consumer)
-				l.Info("Tuned into Kafka", "topic", t.Name)
+				wsManager.AddConsumer(appCtx, t.Name, t.Type, consumer)
+				l.Info("📡 Connected to Kafka stream", "topic", t.Name)
 			}
 		}
-		go wsManager.Run(wsCtx)
+		go wsManager.Run(appCtx)
 
-		// D. Finalize Handlers
+		// D. Activation
 		h = handlers.NewHandler(aiClient, rdb, wsManager, m, l, workforceRepo, aiRepo)
 		isReady.Store(true)
-		l.Info("API Gateway fully operational (READY)")
+		l.Info("⭐ API Gateway is fully optimized and READY")
 	}()
 
-	// 7. HTTP Server Setup (Immediate)
+	// 7. Instant Health & Routing Setup
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())
 
-	// Health Check (Responsive immediately)
+	// Liveness/Readiness Probe
 	router.GET("/health", func(c *gin.Context) {
 		status := "STARTING"
 		if isReady.Load() {
@@ -190,10 +180,11 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{
 			"status":    status,
 			"timestamp": time.Now(),
+			"version":   "2.1.0-resilient",
 		})
 	})
 
-	// Proxy Logic
+	// Collector Ingest Proxy
 	router.Any("/api/v1/ingest/*proxyPath", func(c *gin.Context) {
 		target := "http://go-collector:8081"
 		if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
@@ -204,69 +195,27 @@ func main() {
 		proxy.ServeHTTP(c.Writer, c.Request)
 	})
 
-	// Platform Routes (Readiness Aware)
+	// Forensic API Routes (Readiness Sensitive)
 	api := router.Group("/api/v1")
 	api.Use(middleware.RateLimitMiddleware(rdb, l))
 	{
-		// Wrap handlers to ensure they don't crash if h is nil
 		readyCheck := func(c *gin.Context) bool {
 			if !isReady.Load() || h == nil {
-				c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Platform initializing. Please wait."})
+				c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Handshaking with backend components. Please retry in 5s."})
 				return false
 			}
 			return true
 		}
 
-		api.GET("/logs", func(c *gin.Context) {
-			if readyCheck(c) {
-				h.SearchLogs(c)
-			}
-		})
-		api.POST("/analyze", func(c *gin.Context) {
-			if readyCheck(c) {
-				h.ManualAnalysis(c)
-			}
-		})
-		api.GET("/anomalies", func(c *gin.Context) {
-			if readyCheck(c) {
-				h.GetAnomalies(c)
-			}
-		})
-		api.GET("/incidents/latest", func(c *gin.Context) {
-			if readyCheck(c) {
-				h.GetLatestIncident(c)
-			}
-		})
-		api.GET("/ws/stream", func(c *gin.Context) {
-			if readyCheck(c) {
-				h.StreamLogs(c)
-			}
-		})
-		api.GET("/stats", func(c *gin.Context) {
-			if readyCheck(c) {
-				h.GetDashboardStats(c)
-			}
-		})
-		api.GET("/health", func(c *gin.Context) {
-			if readyCheck(c) {
-				h.GetSystemHealth(c)
-			}
-		})
-		api.GET("/workforce/employees", func(c *gin.Context) {
-			if readyCheck(c) {
-				h.ListEmployees(c)
-			}
-		})
-		api.POST("/workforce/employees", func(c *gin.Context) {
-			if readyCheck(c) {
-				h.CreateEmployee(c)
-			}
-		})
-		api.GET("/workforce/headcount", func(c *gin.Context) {
-			if readyCheck(c) {
-				h.GetDepartmentHeadcount(c)
-			}
-		})
+		api.GET("/logs", func(c *gin.Context) { if readyCheck(c) { h.SearchLogs(c) } })
+		api.POST("/analyze", func(c *gin.Context) { if readyCheck(c) { h.ManualAnalysis(c) } })
+		api.GET("/anomalies", func(c *gin.Context) { if readyCheck(c) { h.GetAnomalies(c) } })
+		api.GET("/incidents/latest", func(c *gin.Context) { if readyCheck(c) { h.GetLatestIncident(c) } })
+		api.GET("/ws/stream", func(c *gin.Context) { if readyCheck(c) { h.StreamLogs(c) } })
+		api.GET("/stats", func(c *gin.Context) { if readyCheck(c) { h.GetDashboardStats(c) } })
+		api.GET("/workforce/employees", func(c *gin.Context) { if readyCheck(c) { h.ListEmployees(c) } })
+		api.POST("/workforce/employees", func(c *gin.Context) { if readyCheck(c) { h.CreateEmployee(c) } })
+		api.GET("/workforce/headcount", func(c *gin.Context) { if readyCheck(c) { h.GetDepartmentHeadcount(c) } })
 	}
 
 	srv := &http.Server{
@@ -275,26 +224,28 @@ func main() {
 	}
 
 	go func() {
-		l.Info("API Gateway listening", "port", cfg.Gateway.HTTPPort)
+		l.Info("🕸️ HTTP Server started", "port", cfg.Gateway.HTTPPort)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("CRITICAL: Server failure: %v", err)
+			log.Fatalf("FATAL: HTTP Interface failure: %v", err)
 		}
 	}()
 
-	// 8. Graceful Shutdown
+	// 8. Wait for OS termination signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	l.Info("Shutting down Gateway...")
+	l.Info("🛑 Orderly shutdown initiated...")
+	appCancel() // Kill background workers and Handshake loop if still running
+
 	ctxShut, cancelShut := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancelShut()
 
 	if err := srv.Shutdown(ctxShut); err != nil {
-		l.Error("CRITICAL: Server forced to shutdown", "error", err)
+		l.Error("WARN: Server forced to shutdown", "error", err)
 	}
 	if aiClient != nil {
 		aiClient.Close()
 	}
-	l.Info("API Gateway exited cleanly")
+	l.Info("👋 API Gateway successfully shutdown")
 }
