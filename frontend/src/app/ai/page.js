@@ -32,9 +32,11 @@ export default function AIForensicsStudio() {
     "Forensic Reasoning Node v2.5 started.",
     "Connecting to tactical telemetry mesh..."
   ]);
+  const [hasMounted, setHasMounted] = useState(false);
   const consoleEndRef = useRef(null);
 
   useEffect(() => {
+    setHasMounted(true);
     // Generate a unique session-based Node ID to replace hardcoded AX-09
     setNodeId(`AX-${Math.random().toString(36).substring(2, 5).toUpperCase()}`);
     setAccuracy(`${(98 + Math.random() * 1.9).toFixed(1)}%`);
@@ -348,7 +350,7 @@ export default function AIForensicsStudio() {
 
            <GlassCard title="Active Distributed Agents">
               <div className="space-y-6">
-                 {[
+                 {hasMounted && [
                    { name: `REASONER-${nodeId}`, status: analyzing ? "Direct_Audit..." : "Idle", risk: report?.severity === 'CRITICAL' ? "High" : "Low" },
                    { name: "PATTERN-MESH", status: wsStatus === "connected" ? "Live_Stream" : "Syncing...", risk: "Low" },
                    { name: "TELEMETRY-GO", status: wsStatus === "connected" ? "Active" : "Handshaking", risk: "Low" },

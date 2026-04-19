@@ -13,6 +13,9 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Ensure we don't try to use server-only features that crash Cloudflare
+  serverRuntimeConfig: {},
+  publicRuntimeConfig: {},
 };
 
 export default nextConfig;
