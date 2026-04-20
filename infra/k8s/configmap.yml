@@ -13,8 +13,9 @@ data:
   KAFKA_CA_PATH: "/app/certs/ca.pem"
   KAFKA_CERT_PATH: "/app/certs/service.cert"
   KAFKA_KEY_PATH: "/app/certs/service.key"
-  GRAFANA_URL: "REDACTED"
-  UPSTASH_REDIS_URL: "REDACTED"
+  # --- Operational Settings ---
+  BATCH_SIZE: "1"
+  FLUSH_INTERVAL: "1s"
   # --- AI Configuration ---
   LLM_PROVIDER: "azure"
   LLM_MODEL: "gpt-5.4-nano"
