@@ -14,14 +14,13 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function WorkforcePage() {
-  const [employees, setEmployees] = useState([]);
-  const [stats, setStats] = useState([]);
+  const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
+    setHasMounted(true);
     const fetchData = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://back.praveen-challa.tech";
         
         // Fetch Employees
         const empRes = await fetch(`${baseUrl}/api/v1/workforce/employees`);
@@ -43,6 +42,8 @@ export default function WorkforcePage() {
 
     fetchData();
   }, []);
+
+  if (!hasMounted) return null;
 
   return (
     <div className="space-y-10 max-w-[1400px]">
