@@ -19,7 +19,7 @@ database:
 kafka:
   brokers:
     - "kafka:29092"
-  tls: true
+  tls: false
   topics:
     raw_logs: "raw-logs"
     analyzed_logs: "analyzed-logs"

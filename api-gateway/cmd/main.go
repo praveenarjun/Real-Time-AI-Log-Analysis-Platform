@@ -128,14 +128,16 @@ func main() {
 		}
 
 		// B. AI Service gRPC
-		for {
+		aiRetries := 60 // 5 minutes of retries
+		for aiRetries > 0 {
 			var gerr error
 			aiClient, gerr = grpc_client.NewAIServiceClient(cfg.Gateway.AIServiceGRPC, l)
 			if gerr == nil {
 				l.Info("✅ AI Service gRPC bridge established")
 				break
 			}
-			l.Warn("⏳ AI Service gRPC missing, retrying...", "target", cfg.Gateway.AIServiceGRPC)
+			aiRetries--
+			l.Warn("⏳ AI Service gRPC missing, retrying...", "target", cfg.Gateway.AIServiceGRPC, "retries_left", aiRetries)
 			time.Sleep(5 * time.Second)
 		}
 

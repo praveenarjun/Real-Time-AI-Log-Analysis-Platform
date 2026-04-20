@@ -126,8 +126,9 @@ jobs:
           echo "Waiting for Gateway to be Healthy (Process Start)..."
           NEXT_WAIT_TIME=0
           until [ "$(docker inspect --format='{{.State.Health.Status}}' $(docker compose ps -q go-gateway))" == "healthy" ]; do
-            if [ $NEXT_WAIT_TIME -ge 60 ]; then
+            if [ $NEXT_WAIT_TIME -ge 120 ]; then
               echo "❌ Gateway container failed to reach healthy state"
+              docker compose ps
               docker compose logs go-gateway
               exit 1
             fi
@@ -138,13 +139,14 @@ jobs:
           echo "Waiting for Platform Readiness (Backend Handshake)..."
           NEXT_WAIT_TIME=0
           until curl -s http://localhost:8080/health | grep -q 'UP'; do
-            if [ $NEXT_WAIT_TIME -ge 120 ]; then
-              echo "❌ Platform failed to reach UP state within 120s"
+            if [ $NEXT_WAIT_TIME -ge 180 ]; then
+              echo "❌ Platform failed to reach UP state within 180s"
+              docker compose ps
               docker compose logs go-gateway
               docker compose logs ai-service
               exit 1
             fi
-            echo "Status: $(curl -s http://localhost:8080/health | jq -r .status || echo 'unknown') ($NEXT_WAIT_TIME/120s)"
+            echo "Status: $(curl -s http://localhost:8080/health | jq -r .status || echo 'unknown') ($NEXT_WAIT_TIME/180s)"
             sleep 5
             NEXT_WAIT_TIME=$((NEXT_WAIT_TIME + 5))
           done

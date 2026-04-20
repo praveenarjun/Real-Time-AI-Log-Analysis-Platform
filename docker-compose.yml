@@ -176,9 +176,10 @@ services:
       - postgres
       - redis
     environment:
-      AI_SERVICE_GRPC: ai-service:50051
+      DATABASE_URL: postgres://user:password@postgres:5432/workforce_db
       KAFKA_BROKERS: kafka:29092
       REDIS_URL: redis://redis:6379
+      KAFKA_TLS: "false"
     logging: *default-logging
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/health"]
