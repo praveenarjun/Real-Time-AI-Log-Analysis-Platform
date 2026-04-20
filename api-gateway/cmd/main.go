@@ -128,17 +128,15 @@ func main() {
 		}
 
 		// B. AI Service gRPC
-		grpcRetries := 60
-		for grpcRetries > 0 {
+		for {
 			var gerr error
 			aiClient, gerr = grpc_client.NewAIServiceClient(cfg.Gateway.AIServiceGRPC, l)
 			if gerr == nil {
 				l.Info("✅ AI Service gRPC bridge established")
 				break
 			}
-			grpcRetries--
-			l.Warn("⏳ AI Service gRPC missing, retrying...", "target", cfg.Gateway.AIServiceGRPC, "retries_left", grpcRetries)
-			time.Sleep(2 * time.Second)
+			l.Warn("⏳ AI Service gRPC missing, retrying...", "target", cfg.Gateway.AIServiceGRPC)
+			time.Sleep(5 * time.Second)
 		}
 
 		// C. Kafka Real-time Feed
@@ -161,10 +159,12 @@ func main() {
 		}
 		go wsManager.Run(appCtx)
 
-		// D. Activation
-		h = handlers.NewHandler(aiClient, rdb, wsManager, m, l, workforceRepo, aiRepo)
-		isReady.Store(true)
-		l.Info("⭐ API Gateway is fully optimized and READY")
+		// D. Activation (ONLY after critical components are non-nil)
+		if aiClient != nil && rdb != nil && wsManager != nil {
+			h = handlers.NewHandler(aiClient, rdb, wsManager, m, l, workforceRepo, aiRepo)
+			isReady.Store(true)
+			l.Info("⭐ API Gateway is fully optimized and READY")
+		}
 	}()
 
 	// 7. Instant Health & Routing Setup
