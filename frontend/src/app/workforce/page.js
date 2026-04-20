@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
+export default function WorkforcePage() {
+  const [employees, setEmployees] = useState([]);
+  const [stats, setStats] = useState([]);
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
