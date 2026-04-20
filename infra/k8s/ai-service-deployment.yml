@@ -51,6 +51,9 @@ spec:
             name: forensic-secrets
         ports:
         - containerPort: 8000
+          name: http
+        - containerPort: 50051
+          name: grpc
         livenessProbe:
           httpGet:
             path: /health
@@ -80,6 +83,11 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 8000
+      name: http
+    - protocol: TCP
+      port: 50051
+      targetPort: 50051
+      name: grpc
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler

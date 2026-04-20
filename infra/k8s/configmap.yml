@@ -18,6 +18,6 @@ data:
   # --- AI Configuration ---
   LLM_PROVIDER: "azure"
   LLM_MODEL: "gpt-5.4-nano"
-  AZURE_OPENAI_ENDPOINT: "https://ailogger.openai.azure.com"
+  AZURE_OPENAI_ENDPOINT: "https://e22cs-mnom9g4r-eastus2.cognitiveservices.azure.com/"
   AZURE_OPENAI_DEPLOYMENT_ID: "gpt-5.4-nano"
   OPENAI_API_VERSION: "2025-04-01-preview"
