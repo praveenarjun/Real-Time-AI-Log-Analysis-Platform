@@ -186,12 +186,15 @@ func main() {
 
 	// Collector Ingest Proxy
 	router.Any("/api/v1/ingest/*proxyPath", func(c *gin.Context) {
-		target := "http://go-collector:8081"
+		target := "http://go-collector:8081/api/v1/ingest"
 		if os.Getenv("KUBERNETES_SERVICE_HOST") != "" {
-			target = "http://go-collector.forensic-platform.svc.cluster.local"
+			target = "http://go-collector.forensic-platform.svc.cluster.local:80/api/v1/ingest"
 		}
 		remote, _ := url.Parse(target)
 		proxy := httputil.NewSingleHostReverseProxy(remote)
+		
+		// Ensure the path is correctly appended to the target
+		c.Request.URL.Path = strings.Replace(c.Request.URL.Path, "/api/v1/ingest", "", 1)
 		proxy.ServeHTTP(c.Writer, c.Request)
 	})
 

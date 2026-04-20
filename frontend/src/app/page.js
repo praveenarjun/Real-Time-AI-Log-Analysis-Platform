@@ -37,35 +37,45 @@ const MOCK_CHART_DATA = [
 
 export default function Dashboard() {
   const { logs, anomalies, activeAnomaly, activeReport, wsStatus, setActiveAnomaly } = useForensic();
+  const [hasMounted, setHasMounted] = useState(false);
   const [stats, setStats] = useState(MOCK_STATS);
   const [chartData, setChartData] = useState(MOCK_CHART_DATA);
   const [loading, setLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setHasMounted(true);
   }, []);
 
   // Stats Fetching Strategy
   useEffect(() => {
+    if (!hasMounted) return;
+
     const fetchData = async () => {
       try {
         const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://back.praveen-challa.tech";
         const statsRes = await fetch(`${baseUrl}/api/v1/stats`);
         if (statsRes.ok) {
           const data = await statsRes.json();
-          setStats(data.stats || MOCK_STATS);
+          if (data && data.stats) {
+            setStats(prev => ({
+                ...prev,
+                ...data.stats
+            }));
+          }
         }
         setLoading(false);
       } catch (err) {
+        console.error("Dashboard stats sync failed", err);
         setLoading(false);
       }
     };
 
     fetchData();
-    const statsInterval = setInterval(fetchData, 10000);
+    const statsInterval = setInterval(fetchData, 15000); // 15s refresh for stability
     return () => clearInterval(statsInterval);
-  }, []);
+  }, [hasMounted]);
+
+  if (!hasMounted) return null;
 
   return (
     <div className="space-y-12 pb-20">
@@ -162,7 +172,7 @@ export default function Dashboard() {
            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <GlassCard title="Failure Trajectory" subtitle="Forensic sentiment and load density correlation">
                   <div className="h-80 w-full mt-6">
-                    {mounted && (
+                    {hasMounted && (
                       <ResponsiveContainer width="100%" height="100%">
                           <AreaChart data={chartData}>
                              <defs>
