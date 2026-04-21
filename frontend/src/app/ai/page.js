@@ -244,12 +244,19 @@ export default function AIForensicsStudio() {
                  exit={{ opacity: 0, y: -30 }}
                  className="space-y-10"
                >
-                 <div className="flex items-center gap-3">
-                   <FileSearch className="w-6 h-6 text-accent-cyan" />
-                   <h2 className="text-xl font-black text-white uppercase tracking-widest">Intelligence Briefing Delivered</h2>
-                 </div>
+                 <motion.div 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="flex items-center gap-3"
+                  >
+                    <FileSearch className="w-6 h-6 text-accent-cyan" />
+                    <h2 className="text-xl font-black text-white uppercase tracking-widest">Intelligence Briefing Delivered</h2>
+                  </motion.div>
 
-                 <GlassCard className="bg-gradient-to-br from-accent-cyan/10 to-transparent border-accent-cyan/20">
+                 <GlassCard className="bg-gradient-to-br from-accent-cyan/10 to-transparent border-accent-cyan/20 relative overflow-hidden group">
+                     {/* Data Flow Pulse */}
+                     <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-accent-cyan/30 to-transparent animate-pulse" />
                     <div className="flex flex-col md:flex-row justify-between gap-8 mb-10">
                        <div className="space-y-3">
                           <h3 className="text-3xl font-black text-white tracking-tighter uppercase">{report.title}</h3>

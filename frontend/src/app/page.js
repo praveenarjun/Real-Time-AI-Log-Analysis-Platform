@@ -80,8 +80,11 @@ export default function Dashboard() {
   return (
     <div className="space-y-12 pb-20">
       {/* Header Section: Forensic Command Context */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-10 border-b border-white/5 pb-10">
-        <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-10 border-b border-white/5 pb-10 relative group overflow-hidden">
+        {/* Cinematic Scanning Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-accent-cyan/0 via-accent-cyan/5 to-accent-cyan/0 -translate-x-full group-hover:translate-x-full transition-transform duration-[3000ms] ease-linear pointer-events-none" />
+        
+        <div className="space-y-6 relative z-10">
           <div className="flex items-center gap-6">
              <div className="w-16 h-16 rounded-[2rem] bg-accent-cyan/10 border border-accent-cyan/20 shadow-[0_0_30px_rgba(34,211,238,0.1)] flex items-center justify-center">
                 <Dna className="w-8 h-8 text-accent-cyan animate-pulse" />
@@ -91,13 +94,13 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3 mt-3">
                    <span className="mono-data text-[10px] text-accent-cyan uppercase tracking-[0.2em] bg-accent-cyan/10 px-3 py-0.5 rounded border border-accent-cyan/20 font-black">Cluster: AZURE-PRIMARY-01</span>
                    <span className="mono-data text-[10px] text-white/10 uppercase tracking-widest font-black">|</span>
-                   <span className="mono-data text-[10px] text-text-secondary uppercase tracking-[0.2em] font-black">Kernel_V: 1.2.4-stable</span>
+                   <span className="mono-data text-[10px] text-status-success uppercase tracking-[0.2em] font-black animate-pulse">Scanning Frequency...</span>
                 </div>
              </div>
           </div>
         </div>
         
-        <div className="flex items-center gap-8 bg-white/5 border border-white/10 p-4 rounded-[2rem] backdrop-blur-3xl shadow-2xl">
+        <div className="flex items-center gap-8 bg-white/5 border border-white/10 p-4 rounded-[2rem] backdrop-blur-3xl shadow-2xl relative z-10">
             <div className="flex flex-col items-end px-6 border-r border-white/10">
                 <span className="mono-data text-[10px] font-black text-white/30 uppercase tracking-[0.25em] mb-1.5">Sonic Tunnel Status</span>
                 <span className={`mono-data text-xs font-black uppercase tracking-tighter ${wsStatus === 'connected' ? 'text-status-success' : 'text-status-error'}`}>
@@ -115,8 +118,14 @@ export default function Dashboard() {
          {(activeReport || activeAnomaly) ? (
             <ImpactCard report={activeReport} anomaly={activeAnomaly} />
          ) : (
-            <GlassCard className="bg-gradient-to-br from-bg-secondary to-transparent border-white/5 py-16 group">
-               <div className="flex flex-col items-center gap-8 text-center">
+            <GlassCard className="bg-gradient-to-br from-bg-secondary to-transparent border-white/5 py-16 group relative overflow-hidden">
+               {/* Scanning Line Animation */}
+               <motion.div 
+                 animate={{ top: ['0%', '100%', '0%'] }}
+                 transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                 className="absolute left-0 right-0 h-[1px] bg-accent-cyan/20 z-0" 
+               />
+               <div className="flex flex-col items-center gap-8 text-center relative z-10">
                   <div className="p-6 rounded-[2.5rem] bg-white/5 border border-white/10 shadow-inner group-hover:scale-110 transition-transform duration-700">
                      <Binary className="w-12 h-12 text-white/10 animate-pulse" />
                   </div>
